@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout 
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:padding="10dip"
+    android:orientation="horizontal" >
+    
+    <LinearLayout 
+        android:orientation="vertical"
+        android:layout_height="wrap_content"
+        android:layout_width="fill_parent"
+        android:layout_gravity="center"
+        android:paddingLeft="10dip"
+        android:paddingRight="10dip"
+        android:paddingTop="10dip"
+        android:paddingBottom="80dip" >
+        
+        <TextView 
+        android:id="@+id/textview1"
+        android:layout_height="wrap_content"
+        android:layout_width="fill_parent"
+        android:layout_gravity="center"
+        android:paddingBottom="10dip"
+        android:text="Output info" />
+        
+        <EditText 
+            android:id="@+id/text_ip"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="5dip"
+            android:inputType="textPersonName" >
+            <requestFocus />
+            </EditText>
+            
+            <EditText 
+                android:id="@+id/text_msg"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="5dip"
+                android:inputType="textPersonName" >
+            </EditText>
+
+        
+        <TableLayout
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:layout_gravity="center"
+            android:stretchColumns="*">
+            
+            <TableRow>
+                <Button 
+                    android:id="@+id/Btn1"
+                    android:text="发送文本信息" />
+                
+                <Button 
+                    android:id="@+id/Btn2"
+                    android:text="发送单文件" />
+            </TableRow>>
+            
+            <TableRow>
+                <Button 
+                    android:id="@+id/Btn3"
+                    android:text="发送多文件" />
+                <Button 
+                    android:id="@+id/Btn4"
+                    android:text="发送文件夹" />
+            </TableRow>>
+            
+            <TableRow>
+
+                <Button
+                    android:id="@+id/Btn5"
+                    android:text="同意接收" />
+
+                <Button 
+                    android:id="@+id/Btn6"
+                    android:text="拒绝接收" />
+            </TableRow>
+            
+            <TableRow>
+                <Button 
+                    android:id="@+id/Btn7"
+                    android:text="停止接收" />
+                <Button 
+                    android:id="@+id/Btn8"
+                    android:text="停止发送" />
+            </TableRow>
+            </TableLayout>
+    </LinearLayout>
+</LinearLayout>
