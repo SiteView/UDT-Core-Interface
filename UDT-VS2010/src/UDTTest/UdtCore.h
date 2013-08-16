@@ -36,17 +36,16 @@
 #include "cc.h"
 #include "common.h"
 
+#define TO_SND 1024*1024		// 文件发送数据块大小：((1(byte) * 1024)(kb) * 1024)(mb)
+
 class CUDTCallBack
 {
 public:
-	virtual void onAccept(const char* pstrIpAddr, const char* pstrHostName, const char* pstrSendType, const char* pstrFileName, int nFileCount) = 0;
-	virtual void onAcceptFolder(const char* pstrAddr, const char* pstrHostName, const char* pstrSendType, const char* pstrFileName, int nFileCount) = 0;
-	virtual void onAcceptonFinish(const char* pstrAddr, std::vector<std::string> vecFileName) = 0;
-	virtual void onSendFinished(const char * pstrMsg) = 0;
-	virtual void onRecvFinished(const char * pstrMsg) = 0;
-	virtual void onSendTransfer(const int64_t nFileTotalSize, const int64_t nCurrent, const char* pstrFileName) = 0;
-	virtual void onRecvTransfer(const int64_t nFileTotalSize, const int64_t nCurrent, const char* pstrFileName) = 0;
-	virtual void onRecvMessage(const char* pstrIpAddr, const char* pstrHostName, const char* pstrMsg) = 0;
+	virtual void onAccept(const char* pstrAddr, const char* pstrFileName, int nFileCount, const char* recdevice, const char* rectype, const char* owndevice, const char* owntype, const char* SendType, int sock) = 0;
+	virtual void onAcceptonFinish(const char* pstrAddr, const char* pFileName, int Type, int sock) = 0;
+	virtual void onFinished(const char * pstrMsg, int Type, int sock) = 0;
+	virtual void onTransfer(const int64_t nFileTotalSize, const int64_t nCurrent, const char* pstrFileName, int Type, int sock) = 0;
+	virtual void onRecvMessage(const char* pstrMsg, const char* pIpAddr, const char* pHostName) = 0;
 };
 
 
@@ -57,7 +56,8 @@ public:
 	~CUdtCore();
 
 	int StartListen(const int nCtrlPort, const int nRcvPort);
-	void SendFile(const char* pstrAddr, const int nPort, const char* pstrHostName, const char* pstrSendtype, const std::vector<std::string> vecArray, int  nType);
+	int SendMsg(const char* pstrAddr, const char* pstrMsg, const char* pstrHostName);
+	int SendFiles(const char* pstrAddr, const std::vector<std::string> vecFiles, const char* owndevice, const char* owntype, const char* recdevice, const char* rectype, const char* pstrSendtype);
 	void ReplyAccept(const UDTSOCKET sock, const char* pstrReply);
 	void StopTransfer(const UDTSOCKET sock, const int nType);
 	void StopListen();
@@ -70,7 +70,12 @@ private:
 		char strAddr[32];
 		char strCtrlPort[32];
 		char strFilePort[32];
+		int64_t nFileTotalSize;
+		int64_t nRecvSize;
 		sockaddr_storage clientaddr;
+		pthread_t hThread;
+		pthread_cond_t cond;
+		pthread_mutex_t lock;
 	}CLIENTCONTEXT, *LPCLIENTCONTEXT;
 
 	typedef struct _ServerContext
@@ -78,13 +83,16 @@ private:
 		UDTSOCKET sock;
 		char strAddr[32];
 		char strPort[32];
-		char strHostName[128];
-		char strSendType[128];
-		char strXSR[8];
-		char strXSP[8];
-		char strXCS[8];
-		char strXSF[8];
-		std::vector<std::string> vecArray;
+		char ownDev[128];
+		char ownType[128];
+		char recvDev[128];
+		char recvType[128];
+		char sendType[128];
+		std::vector<std::string> vecFiles;
+		bool bSendFile;
+		pthread_t hThread;
+		pthread_cond_t cond;
+		pthread_mutex_t lock;
 	}SERVERCONTEXT, *LPSERVERCONTEXT;
 
 	void SearchFileInDirectroy(const std::string & szPath, int64_t & nTotalSize, std::vector<std::string> & vecDirName, std::vector<std::string> & vecFileName);
@@ -108,36 +116,41 @@ private:
 	int m_eid;
 	UDTSOCKET m_sockListenCtrlCmd;
 	UDTSOCKET m_sockListenRcvFile;
+	int m_nCtrlPort;
+	int m_nRcvPort;
 	std::string m_szReplyfilepath;
 	bool m_bSendStatus;
 	bool m_bRecvStatus;
 	bool m_bListenStatus;
 
-	pthread_mutex_t m_AcceptLock;
-	pthread_mutex_t m_SendLock;
-	pthread_mutex_t m_RecvLock;
+	pthread_mutex_t m_LockLis;
+	pthread_mutex_t m_LockSnd;
+	pthread_mutex_t m_LockRcv;
+	pthread_mutex_t m_Lock;
 
-	pthread_cond_t m_AcceptCond;
-	pthread_cond_t m_SendCond;
-	pthread_cond_t m_RecvCond;
+	pthread_cond_t m_CondLisCtrl;
+	pthread_cond_t m_CondLisFile;
+	pthread_cond_t m_CondSnd;
+	pthread_cond_t m_CondRcv;
 
-	pthread_t m_hListenThread;
-	pthread_t m_hSendThread;
-	pthread_t m_hRecvThread;
+	pthread_t m_hThrLisCtrl;
+	pthread_t m_hThrLisFile;
+	pthread_t m_hThrSnd;
+	pthread_t m_hThrRcv;
 #ifndef WIN32
-	static void * _ListenCtrlCmdThread(void * pParam);
+	static void * _ListenRcvCtrlThread(void * pParam);
 	static void * _ListenRcvFileThread(void * pParam);
 	static void * _SendThread(void * pParam);
 	static void * _RecvThread(void * pParam);
-	static void * _SendFile(void * pParam);
-	static void * _RecvFile(void * pParam);
+	static void * _SendFiles(void * pParam);
+	static void * _RecvFiles(void * pParam);
 #else
-	static DWORD WINAPI _ListenCtrlCmdThread(LPVOID pParam);
+	static DWORD WINAPI _ListenRcvCtrlThread(LPVOID pParam);
 	static DWORD WINAPI _ListenRcvFileThread(LPVOID pParam);
 	static DWORD WINAPI _SendThread(LPVOID pParam);
 	static DWORD WINAPI _RecvThread(LPVOID pParam);
-	static DWORD WINAPI _SendFile(LPVOID pParam);
-	static DWORD WINAPI _RecvFile(LPVOID pParam);
+	static DWORD WINAPI _SendFiles(LPVOID pParam);
+	static DWORD WINAPI _RecvFiles(LPVOID pParam);
 #endif
 };
 
