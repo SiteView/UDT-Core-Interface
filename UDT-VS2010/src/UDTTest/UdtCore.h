@@ -55,7 +55,7 @@ public:
 	CUdtCore(CUDTCallBack * pCallback);
 	~CUdtCore();
 
-	int StartListen(const int nCtrlPort, const int nRcvPort);
+	int StartListen(const int nCtrlPort, const int nFilePort);
 	int SendMsg(const char* pstrAddr, const char* pstrMsg, const char* pstrHostName);
 	int SendFiles(const char* pstrAddr, const std::vector<std::string> vecFiles, const char* owndevice, const char* owntype, const char* recdevice, const char* rectype, const char* pstrSendtype);
 	void ReplyAccept(const UDTSOCKET sock, const char* pstrReply);
@@ -80,9 +80,11 @@ private:
 
 	typedef struct _ServerContext
 	{
-		UDTSOCKET sock;
+		UDTSOCKET sockCtrl;
+		UDTSOCKET sockFile;
 		char strAddr[32];
-		char strPort[32];
+		char strCtrlPort[32];
+		char strFilePort[32];
 		char ownDev[128];
 		char ownType[128];
 		char recvDev[128];
@@ -117,7 +119,7 @@ private:
 	UDTSOCKET m_sockListenCtrlCmd;
 	UDTSOCKET m_sockListenRcvFile;
 	int m_nCtrlPort;
-	int m_nRcvPort;
+	int m_nFilePort;
 	std::string m_szReplyfilepath;
 	bool m_bSendStatus;
 	bool m_bRecvStatus;

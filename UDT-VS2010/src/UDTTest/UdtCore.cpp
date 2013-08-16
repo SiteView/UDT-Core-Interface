@@ -9,7 +9,7 @@ CUdtCore::CUdtCore(CUDTCallBack * pCallback)
 	, m_bSendStatus(false)
 	, m_bRecvStatus(false)
 	, m_nCtrlPort(7777)
-	, m_nRcvPort(7778)
+	, m_nFilePort(7778)
 {
 #ifndef WIN32
 	pthread_mutex_init(&m_Lock, NULL);
@@ -56,7 +56,7 @@ CUdtCore::~CUdtCore()
 #endif
 }
 
-int CUdtCore::StartListen(const int nCtrlPort, const int nRcvPort)
+int CUdtCore::StartListen(const int nCtrlPort, const int nFilePort)
 {
 	UDT::startup();
 
@@ -64,12 +64,12 @@ int CUdtCore::StartListen(const int nCtrlPort, const int nRcvPort)
 		return 0;
 
 	m_nCtrlPort = nCtrlPort;
-	m_nRcvPort = nRcvPort;
+	m_nFilePort = nFilePort;
 	// Init listen ContrlSocket/RecvFileSocket
-	if (InitListenSocket(nCtrlPort, m_sockListenCtrlCmd) == 0 && InitListenSocket(nRcvPort, m_sockListenRcvFile) == 0)
+	if (InitListenSocket(nCtrlPort, m_sockListenCtrlCmd) == 0 && InitListenSocket(nFilePort, m_sockListenRcvFile) == 0)
 	{
-		cout << "Local listen ctrl port SUCCESS:" << nCtrlPort << endl;
-		cout << "Local listen rcv port SUCCESS:" << nRcvPort << endl;
+		cout << "Local listen CtrlPort SUCCESS:" << nCtrlPort << endl;
+		cout << "Local listen FilePort SUCCESS:" << nFilePort << endl;
 
 		// create listen thread for accept client connect
 #ifndef WIN32
@@ -142,24 +142,45 @@ int CUdtCore::SendFiles(const char* pstrAddr, const std::vector<std::string> vec
 	// create concurrent UDT sockets
 	UDT::startup();
 	UDTSOCKET client;
-	char strPort[32];
-	sprintf(strPort, "%d", m_nCtrlPort);
-	if (CreateUDTSocket(client, strPort) < 0)
-		return 0;
-	if (UDT_Connect(client, pstrAddr, strPort) < 0)
-		return 0;
+	char strCtrlPort[32];
+	char strFilePort[32];
+	sprintf(strCtrlPort, "%d", m_nCtrlPort);
+	sprintf(strFilePort, "%d", m_nFilePort);
 
+	if (CreateUDTSocket(client, strCtrlPort) < 0)
+	{
+		m_pCallBack->onFinished("NETFAIL", 2, client);
+		return 0;
+	}
+	if (UDT_Connect(client, pstrAddr, strCtrlPort) < 0)
+	{
+		m_pCallBack->onFinished("NETFAIL", 2, client);
+		return 0;
+	}
+
+	// Remove ServerContext
 	LPSERVERCONTEXT sxt = new SERVERCONTEXT;
+	CGuard::enterCS(m_Lock);
+	for (vector<LPSERVERCONTEXT>::iterator it = VEC_SXT.begin(); it != VEC_SXT.end(); it++)
+	{
+		sxt = *it;
+		if (sxt->sockCtrl < 0)
+		{
+			VEC_SXT.erase(it);
+		}
+	}
+
 	memset(sxt, 0, sizeof(SERVERCONTEXT));
 	memcpy(sxt->strAddr, pstrAddr, 32);
-	memcpy(sxt->strPort, strPort, 32);
+	memcpy(sxt->strCtrlPort, strCtrlPort, 32);
+	memcpy(sxt->strFilePort, strFilePort, 32);
 	memcpy(sxt->ownDev, owndevice, 128);
 	memcpy(sxt->ownType, owntype, 128);
 	memcpy(sxt->recvDev, recdevice, 128);
 	memcpy(sxt->recvType, rectype, 128);
 	memcpy(sxt->sendType, pstrSendtype, 128);
+	sxt->sockCtrl = client;
 	sxt->vecFiles = vecFiles;
-	sxt->sock = client;
 	sxt->bSendFile = false;
 
 	pthread_t hHandle;
@@ -176,16 +197,7 @@ int CUdtCore::SendFiles(const char* pstrAddr, const std::vector<std::string> vec
 	VEC_SXT.push_back(sxt);
 	hHandle = CreateThread(NULL, 0, _SendThread, this, 0, &ID);
 #endif
-
-	for (vector<LPSERVERCONTEXT>::iterator it = VEC_SXT.begin(); it != VEC_SXT.end(); it++)
-	{
-		sxt = *it;
-		if (sxt->sock == client)
-		{
-			sxt->hThread = hHandle;
-			break;
-		}
-	}
+	CGuard::leaveCS(m_Lock);
 
 	return client;
 }
@@ -239,7 +251,7 @@ void CUdtCore::StopTransfer(const UDTSOCKET sock, const int nType)
 	for (vector<LPSERVERCONTEXT>::iterator it = VEC_SXT.begin(); it != VEC_SXT.end(); it++)
 	{
 		sxt = *it;
-		if (sxt->sock == sock)
+		if (sxt->sockCtrl == sock)
 		{
 			memset(Head, 0, 8);
 			if (sxt->bSendFile)
@@ -454,7 +466,7 @@ DWORD WINAPI CUdtCore::_SendThread(LPVOID pParam)
 
 	LPSERVERCONTEXT sxt = new SERVERCONTEXT;
 	sxt = pThis->VEC_SXT.back();
-	UDTSOCKET client = sxt->sock;
+	UDTSOCKET client = sxt->sockCtrl;
 
 	// send flags
 	memset(Head, 0, 8);
@@ -527,15 +539,13 @@ DWORD WINAPI CUdtCore::_SendThread(LPVOID pParam)
 		if (memcmp(Head, "FRA", 3) == 0)
 		{
 			sxt->bSendFile = true;
-			memset(sxt->strPort, 0, sizeof(sxt->strPort));
-			sprintf(sxt->strPort, "%s", "7778");
 			pthread_t hHandle;
 #ifndef WIN32
-			pthread_create(&hHandle, NULL, _SendFiles, sxt);
+			pthread_create(&hHandle, NULL, _SendFiles, pThis);
 			pthread_detach(hHandle);
 #else
 			DWORD ID;
-			hHandle = CreateThread(NULL, 0, _SendFiles, sxt, 0, &ID);
+			hHandle = CreateThread(NULL, 0, _SendFiles, pThis, 0, &ID);
 #endif
 		}
 		else if (memcmp(Head, "FRR", 3) == 0 || memcmp(Head, "FRB", 3) == 0 || memcmp(Head, "FRC", 3) == 0)
@@ -600,7 +610,6 @@ Loop:
 
 	UDT::close(client);
 	delete sxt;
-	pThis->VEC_SXT.pop_back();
 
 #ifndef WIN32
 	return NULL;
@@ -615,7 +624,10 @@ void * CUdtCore::_SendFiles(void * pParam)
 DWORD WINAPI CUdtCore::_SendFiles(LPVOID pParam)
 #endif
 {
-	LPSERVERCONTEXT cxt = (LPSERVERCONTEXT)pParam;
+	CUdtCore * pThis = (CUdtCore *)pParam;
+
+	LPSERVERCONTEXT sxt = new SERVERCONTEXT;
+	sxt = pThis->VEC_SXT.back();
 
 	char Head[8];
 	int nLen = 0, nPos = 0, nFileCount = 0;
@@ -630,7 +642,7 @@ DWORD WINAPI CUdtCore::_SendFiles(LPVOID pParam)
 	hints.ai_flags = AI_PASSIVE;
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
-	if (0 != getaddrinfo(NULL, cxt->strPort, &hints, &res))
+	if (0 != getaddrinfo(NULL, sxt->strFilePort, &hints, &res))
 	{
 		cout << "illegal port number or port is busy.\n" << endl;
 		goto Loop;
@@ -651,9 +663,9 @@ DWORD WINAPI CUdtCore::_SendFiles(LPVOID pParam)
 //#endif
 
 	freeaddrinfo(res);
-	if (0 != getaddrinfo(cxt->strAddr, cxt->strPort, &hints, &res))
+	if (0 != getaddrinfo(sxt->strAddr, sxt->strFilePort, &hints, &res))
 	{
-		cout << "incorrect server/peer address. " << cxt->strAddr << ":" << cxt->strPort << endl;
+		cout << "incorrect server/peer address. " << sxt->strAddr << ":" << sxt->strFilePort << endl;
 		goto Loop;
 	}
 	// connect to the server, implict bind
@@ -664,7 +676,7 @@ DWORD WINAPI CUdtCore::_SendFiles(LPVOID pParam)
 	}
 	freeaddrinfo(res);
 
-	vecFileName = cxt->vecFiles;
+	vecFileName = sxt->vecFiles;
 	for (vector<string>::iterator it = vecFileName.begin(); it != vecFileName.end(); it++)	
 	{
 		// send file tage
@@ -688,13 +700,13 @@ DWORD WINAPI CUdtCore::_SendFiles(LPVOID pParam)
 		{
 			nPos = szFilePath.find_last_of("\\");
 		}
-		szTmp = szFilePath.substr(nPos+1);
+		szFileName = szFilePath.substr(nPos+1);
 
 		// send filename size and filename
-		int nLen = szTmp.size();
+		int nLen = szFileName.size();
 		if (UDT::ERROR == UDT::send(client, (char*)&nLen, sizeof(int), 0))
 			goto Loop;
-		if (UDT::ERROR == UDT::send(client, szTmp.c_str(), nLen, 0))
+		if (UDT::ERROR == UDT::send(client, szFileName.c_str(), nLen, 0))
 			goto Loop;
 
 		// open the file
@@ -726,6 +738,7 @@ DWORD WINAPI CUdtCore::_SendFiles(LPVOID pParam)
 					break;
 			}
 			ifs.close();
+			pThis->m_pCallBack->onAcceptonFinish((char *)sxt->strAddr, szFileName.c_str(), 2, client);
 		}
 		catch (...)
 		{
@@ -1230,16 +1243,7 @@ void CUdtCore::ProcessCMD(const UDTSOCKET & sock, const char* pstrCMD)
 
 void CUdtCore::ProcessAccept(CLIENTCONTEXT & cxt)
 {
-	char clienthost[NI_MAXHOST];
-	char clientservice[NI_MAXSERV];
-	getnameinfo((sockaddr *)&cxt.clientaddr, sizeof(cxt.clientaddr), clienthost, sizeof(clienthost), clientservice, sizeof(clientservice), NI_NUMERICHOST|NI_NUMERICSERV);
 
-//	sprintf(cxt.strAddr, "%s", clienthost);
-//	sprintf(cxt.strPort, "%s", clientservice);
-//	VEC_CXT.push_back(cxt);
-//	UDT::epoll_add_usock(m_eid, cxt.sock);
-
-	cout << "new connection: " << clienthost << ":" << clientservice << endl;
 }
 
 void CUdtCore::ProcessSendFile(SERVERCONTEXT & sxt)
