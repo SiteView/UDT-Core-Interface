@@ -33,92 +33,55 @@ bool JNICore::init(JNIEnv *env, jobject delegateObj)
 	return true;
 }
 
-void JNICore::onAccept(const char* pstrIpAddr, const char* pstrHostName, const char* pstrSendType, const char* pstrFileName, int nFileCount)
+void JNICore::onAccept(const char* pstrIpAddr, const char* pstrFileName, int nFileCount, const char* pstrRecdevice, const char* pstrRectype, const char* pstrOwndevice, const char* pstrOwntype, const char* pstrSendType, int sock)
 {
 	VMGuard vmguard;
 	if (JNIEnv *env = vmguard.env())
 	{
 		jstring jsAddr = env->NewStringUTF(pstrIpAddr);
-		jstring jsHost = env->NewStringUTF(pstrHostName);
-		jstring jsType = env->NewStringUTF(pstrSendType);
 		jstring jsFile = env->NewStringUTF(pstrFileName);
-		env->CallVoidMethod(m_delegateObj, CG::m_OnAccept, jsAddr, jsHost, jsType, jsFile, nFileCount);
+		jstring jsRecdevice = env->NewStringUTF(pstrRecdevice);
+		jstring jsRectype = env->NewStringUTF(pstrRectype);
+		jstring jsOwndevice = env->NewStringUTF(pstrOwndevice);
+		jstring jsOwntype = env->NewStringUTF(pstrOwntype);
+		jstring jsSndType = env->NewStringUTF(pstrSendType);
+		env->CallVoidMethod(m_delegateObj, CG::m_OnAccept, jsAddr, jsFile, nFileCount, jsRecdevice, jsRectype, jsOwndevice, jsOwntype, jsSndType, sock);
 	}
 }
 
-void JNICore::onAcceptFolder(const char* pstrIpAddr, const char* pstrHostName, const char* pstrSendType, const char* pstrFileName, int nFileCount)
+void JNICore::onAcceptonFinish(const char* pstrAddr, const char* pstrFileName, int Type, int sock)
 {
 	VMGuard vmguard;
 	if (JNIEnv *env = vmguard.env())
 	{
-		jstring jsAddr = env->NewStringUTF(pstrIpAddr);
-		jstring jsHost = env->NewStringUTF(pstrHostName);
-		jstring jsType = env->NewStringUTF(pstrSendType);
+		jstring jsAddr = env->NewStringUTF(pstrAddr);
 		jstring jsFile = env->NewStringUTF(pstrFileName);
-		env->CallVoidMethod(m_delegateObj, CG::m_OnAcceptFolder, jsAddr, jsHost, jsType, jsFile, nFileCount);
+		env->CallVoidMethod(m_delegateObj, CG::m_OnAcceptonFinish, jsAddr, jsFile, Type, sock);
 	}
 }
 
-void JNICore::onAcceptonFinish(const char* host, std::vector<std::string> vecFileName)
-{
-	VMGuard vmguard;
-	if (JNIEnv *env = vmguard.env())
-	{
-		int nCount = vecFileName.size();
-		jstring jsTmp;
-		jstring jsHost = env->NewStringUTF(host);
-		jobjectArray arry = env->NewObjectArray(nCount, CG::c_String, 0);
-		for (int i = 0; i < nCount; i++)
-		{
-			jsTmp = env->NewStringUTF(vecFileName[i].c_str());
-			env->SetObjectArrayElement(arry, i, jsTmp);
-			env->DeleteLocalRef(jsTmp);
-		}
-		env->CallVoidMethod(m_delegateObj, CG::m_OnAcceptonFinish, jsHost, arry);
-	}
-}
-
-void JNICore::onSendFinished(const char * pstrMsg)
+void JNICore::onFinished(const char * pstrMsg, int Type, int sock)
 {
 	VMGuard vmguard;
 	if (JNIEnv *env = vmguard.env())
 	{
 		jstring jsText = env->NewStringUTF(pstrMsg);
-		env->CallVoidMethod(m_delegateObj, CG::m_OnFinished, jsText);
+		env->CallVoidMethod(m_delegateObj, CG::m_OnFinished, jsText, Type, sock);
 	}
 }
 
-void JNICore::onRecvFinished(const char * pstrMsg)
-{
-	VMGuard vmguard;
-	if (JNIEnv *env = vmguard.env())
-	{
-		jstring jsText = env->NewStringUTF(pstrMsg);
-		env->CallVoidMethod(m_delegateObj, CG::m_OnFinished, jsText);
-	}
-}
 
-void JNICore::onSendTransfer(const int64_t nFileTotalSize, const int64_t nCurrent, const char* pstrFileName)
+void JNICore::onTransfer(const int64_t nFileTotalSize, const int64_t nCurrent, const char* pstrFileName, int Type, int sock)
 {
 	VMGuard vmguard;
 	if (JNIEnv *env = vmguard.env())
 	{
 		jstring jsText = env->NewStringUTF(pstrFileName);
-		env->CallVoidMethod(m_delegateObj, CG::m_OnTransfer, nFileTotalSize, nCurrent, jsText);
+		env->CallVoidMethod(m_delegateObj, CG::m_OnTransfer, nFileTotalSize, nCurrent, jsText, Type, sock);
 	}
 }
 
-void JNICore::onRecvTransfer(const int64_t nFileTotalSize, const int64_t nCurrent, const char* pstrFileName)
-{
-	VMGuard vmguard;
-	if (JNIEnv *env = vmguard.env())
-	{
-		jstring jsText = env->NewStringUTF(pstrFileName);
-		env->CallVoidMethod(m_delegateObj, CG::m_OnTransfer, nFileTotalSize, nCurrent, jsText);
-	}
-}
-
-void JNICore::onRecvMessage(const char* pstrIpAddr, const char* pstrHostName, const char* pstrMsg)
+void JNICore::onRecvMessage(const char* pstrMsg, const char* pstrIpAddr, const char* pstrHostName)
 {
 	VMGuard vmguard;
 	if (JNIEnv *env = vmguard.env())
@@ -126,7 +89,7 @@ void JNICore::onRecvMessage(const char* pstrIpAddr, const char* pstrHostName, co
 		jstring jsAddr = env->NewStringUTF(pstrIpAddr);
 		jstring jsHost = env->NewStringUTF(pstrHostName);
 		jstring jsText = env->NewStringUTF(pstrMsg);
-		env->CallVoidMethod(m_delegateObj, CG::m_OnRecvMessage, jsAddr, jsHost, jsText);
+		env->CallVoidMethod(m_delegateObj, CG::m_OnRecvMessage, jsText, jsAddr, jsHost);
 	}
 }
 

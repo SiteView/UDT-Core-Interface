@@ -22,56 +22,10 @@ CUdtProxy * CUdtProxy::GetInStance()
 	return m_pUdtProxy;
 }
 
-
-int CUdtProxy::Init(const int nCtrlPort, const int nRcvPort)
+CUdtCore *CUdtProxy::core() const
 {
-	if (m_pUdt->StartListen(nCtrlPort, nRcvPort) < 0)
-		return -1;
-
-	return 0;
+	return m_pUdt;
 }
-
-void CUdtProxy::sendMessage(const char* pstrAddr, const int nPort, const char* pstrMessage, const char* pstrHostname, const char* pstrSendtype)
-{
-	std::vector<std::string> vecTexts;
-	vecTexts.push_back(pstrMessage);
-	m_sock = m_pUdt->SendFiles(pstrAddr, vecTexts, pstrHostname, pstrHostname, pstrHostname, pstrHostname, pstrSendtype);
-}
-
-void CUdtProxy::sendfile(const char* pstrAddr, const int nPort, const char* pstrFileName, const char* pstrHostname, const char *pstrSendtype)
-{
-	std::vector<std::string> vecTexts;
-	vecTexts.push_back(pstrFileName);
-	m_sock = m_pUdt->SendFiles(pstrAddr, vecTexts, "HTC G18", "ANDROID", "zhujianwen", "WIN7", "GENIETURBO");
-}
-
-void CUdtProxy::sendMultiFiles(const char* pstrAddr, const int nPort, const std::vector<std::string> strArray, const char* pstrHostName, const char* pstrSendtype)
-{
-	m_sock = m_pUdt->SendFiles(pstrAddr, strArray, pstrHostName, pstrHostName, pstrHostName, pstrHostName, pstrSendtype);
-}
-
-void CUdtProxy::sendFolderFiles(const char* pstrAddr, const int nPort, const char* pstrFolderName, const char* pstrHostName, const char* pstrSendtype)
-{
-	std::vector<std::string> vecTexts;
-	vecTexts.push_back(pstrFolderName);
-	m_sock = m_pUdt->SendFiles(pstrAddr, vecTexts, pstrHostName, pstrHostName, pstrHostName, pstrHostName, pstrSendtype);
-}
-
-void CUdtProxy::replyAccept(const char* pstrReply)
-{
-	m_pUdt->ReplyAccept(m_sock, pstrReply);
-}
-
-void CUdtProxy::stopTransfer(const int nType)
-{
-	m_pUdt->StopTransfer(m_sock, nType);
-}
-
-void CUdtProxy::stopListen()
-{
-	m_pUdt->StopListen();
-}
-
 
 //////////////////////////////////////////////////////////////////////////
 // Call Back
@@ -99,12 +53,18 @@ void CUdtProxy::onAccept(const char* pstrAddr, const char* pstrFileName, int nFi
 
 void CUdtProxy::onAcceptonFinish(const char* pstrAddr, const char* pFileName, int Type, int sock)
 {
-	std::cout<< "onAcceptonFinish file name:" << pFileName << std::endl;
+	if (Type == 1)
+		std::cout<< "Recv onAcceptonFinish file name:" << pFileName << std::endl;
+	else
+		std::cout<< "Send onAcceptonFinish file name:" << pFileName << std::endl;
 }
 
 void CUdtProxy::onFinished(const char * pstrMsg, int Type, int sock)
 {
-	std::cout<< "onSendFinished:" << pstrMsg << std::endl;
+	if (Type == 1)
+		std::cout<< "onRecvFinished:" << pstrMsg << std::endl;
+	else
+		std::cout<< "onSendFinished:" << pstrMsg << std::endl;
 }
 
 void CUdtProxy::onTransfer(const int64_t nFileTotalSize, const int64_t nCurrent, const char* pstrFileName, int Type, int sock)
@@ -112,7 +72,10 @@ void CUdtProxy::onTransfer(const int64_t nFileTotalSize, const int64_t nCurrent,
 	double dTotal = (double)nFileTotalSize;
 	double dPercent = nCurrent / dTotal;
 	static char * Tmp = "%";
-	printf("Send file name:%s, percent:%.2f%s\n", pstrFileName, dPercent*100, Tmp);
+	if (Type == 1)
+		printf("Recv file name:%s, percent:%.2f%s\n", pstrFileName, dPercent*100, Tmp);
+	else
+		printf("Send file name:%s, percent:%.2f%s\n", pstrFileName, dPercent*100, Tmp);
 }
 
 void CUdtProxy::onRecvMessage(const char* pstrMsg, const char* pIpAddr, const char* pHostName)

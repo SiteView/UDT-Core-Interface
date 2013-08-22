@@ -7,10 +7,8 @@ public class FileTransfer {
 	public interface Callback
 	{		
 		public abstract void onAccept(String szIpAddr, String szHostName, String szSendType, String szFileName, int nFileCount);
-		public abstract void onSendFinished(String szMsg);
-		public abstract void onRecvFinished(String sztrMsg);
-		public abstract void onSendTransfer(long nFileTotalSize, long nCurrent, String szFileName);
-		public abstract void onRecvTransfer(long nFileTotalSize, long nCurrent, String szFileName);
+		public abstract void onFinished(String szMsg, int Type);
+		public abstract void onTransfer(long nFileTotalSize, long nCurrent, String szFileName, int Type);
 		public abstract void onRecvMessage(String szIpAddr, String szHostName, String szMsg);
 	}
 	
@@ -67,9 +65,9 @@ public class FileTransfer {
     }
 	void hook_onAccept(String host, String DeviceName, String SendType, String filename, int count)
 	{
-		if (mCallback != null) {
-			mCallback.onAccept(host, DeviceName, SendType, filename, count);
-		}
+		//if (mCallback != null) {
+		//	mCallback.onAccept(host, DeviceName, SendType, filename, count);
+		//}
 	}
 	
     /**
@@ -78,7 +76,7 @@ public class FileTransfer {
      * @param filename  接收成功的文件名
      * @param sock       套接字索引
      */
-    public void onAcceptonFinish(String host, String filename,int sock)
+    public void onAcceptonFinish(String host, String filename, int Type, int sock)
     {
     	System.out.println("------onAccept:" + host + ":");
     	//FileTransfer.this.hook_onAcceptonFinish(host, fileNameList);
@@ -100,10 +98,10 @@ public class FileTransfer {
     }
     void hook_onFinished(String msg)
     {
-    	if (mCallback != null)
-    	{
-    		mCallback.onRecvFinished(msg);
-    	}
+    	//if (mCallback != null)
+    	//{
+    	//	mCallback.onRecvFinished(msg);
+    	//}
     }
     
     
@@ -115,17 +113,17 @@ public class FileTransfer {
      * @param type 1=接收类型进度  2=发送类型进度
      * @param sock      套接字索引
      */
-    public void onTransfer(long sum,long current,String filename,int type ,int sock)
+    public void onTransfer(long sum, long current, String filename, int type , int sock)
     {
     	System.out.println("------onTransfer:" + sum + ":" + current);
     	//FileTransfer.this.hook_onTransfer(sum, current, filename);
     }
     void hook_onTransfer(long sum,long current,String filename)
     {
-    	if (mCallback != null)
-    	{
-    		mCallback.onRecvTransfer(sum, current, filename);
-    	}
+    	//if (mCallback != null)
+    	//{
+    	//	mCallback.onRecvTransfer(sum, current, filename);
+    	//}
     }
     
     
@@ -135,16 +133,16 @@ public class FileTransfer {
      * @param host  IP地址
      * @param hostname  主机名称
      */
-    public void onRecvMessage(String msg,String host,String hostname)
+    public void onRecvMessage(String msg, String host, String hostname)
     {
     	System.out.println("------onRecvMessage:" + host + ":" + msg);
     	//FileTransfer.this.hook_onRecvMessage(host, hostname, msg);
     }
     void hook_onRecvMessage(String szIpAddr, String szHostName, String szMsg)
     {
-		if (mCallback != null) {
-			mCallback.onRecvMessage(szIpAddr, szHostName, szMsg);
-		}
+		//if (mCallback != null) {
+		//	mCallback.onRecvMessage(szIpAddr, szHostName, szMsg);
+		//}
     }
     
     

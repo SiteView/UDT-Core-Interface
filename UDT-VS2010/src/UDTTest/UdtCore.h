@@ -36,7 +36,7 @@
 #include "cc.h"
 #include "common.h"
 
-#define TO_SND 1024*1024		// 文件发送数据块大小：((1(byte) * 1024)(kb) * 1024)(mb)
+#define TO_SND 1024*500		// 文件发送数据块大小：((1(byte) * 1024)(kb) * 1024)(mb)
 
 class CUDTCallBack
 {
@@ -47,7 +47,6 @@ public:
 	virtual void onTransfer(const int64_t nFileTotalSize, const int64_t nCurrent, const char* pstrFileName, int Type, int sock) = 0;
 	virtual void onRecvMessage(const char* pstrMsg, const char* pIpAddr, const char* pHostName) = 0;
 };
-
 
 class CUdtCore
 {
@@ -90,6 +89,8 @@ private:
 		char recvDev[128];
 		char recvType[128];
 		char sendType[128];
+		std::vector<std::string> vecFile;
+		std::vector<std::string> vecDirs;
 		std::vector<std::string> vecFiles;
 		bool bSendFile;
 		pthread_t hThread;
@@ -99,10 +100,6 @@ private:
 
 	void SearchFileInDirectroy(const std::string & szPath, int64_t & nTotalSize, std::vector<std::string> & vecDirName, std::vector<std::string> & vecFileName);
 	void CreateDirectroy(const std::string & szPath);
-	void ProcessCMD(const UDTSOCKET & sock, const char* pstrCMD);
-	void ProcessAccept(CLIENTCONTEXT & cxt);
-	void ProcessSendFile(SERVERCONTEXT & sxt);
-	void ProcessRecvFile(CLIENTCONTEXT & cxt);
 	int InitListenSocket(const int nPort, UDTSOCKET & sockListen);
 	int CreateTCPSocket(SYSSOCKET & ssock, const char* pstrPort, bool rendezvous = false);
 	int CreateUDTSocket(UDTSOCKET & usock, const char* pstrPort, bool rendezvous = false);

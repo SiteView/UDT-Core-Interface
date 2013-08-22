@@ -44,42 +44,46 @@ JNIEXPORT jint JNICALL Java_com_dragonflow_FileTransfer_startListen(JNIEnv* env,
 	return core->core()->StartListen(portCtrl, portFile);
 }
 
-JNIEXPORT void  JNICALL Java_com_dragonflow_FileTransfer_stopTransfer(JNIEnv *env, jclass clazz, jlong ptr, jint nType, jint sock)
+JNIEXPORT jint  JNICALL Java_com_dragonflow_FileTransfer_stopTransfer(JNIEnv *env, jclass clazz, jlong ptr, jint nType, jint sock)
 {
 	JNICore *core = reinterpret_cast<JNICore*>(ptr);
 	core->core()->StopTransfer(sock, nType);
+	return 0;
 }
 
-JNIEXPORT void  JNICALL Java_com_dragonflow_FileTransfer_stopListen(JNIEnv *env, jclass clazz, jlong ptr)
+JNIEXPORT jint  JNICALL Java_com_dragonflow_FileTransfer_stopListen(JNIEnv *env, jclass clazz, jlong ptr)
 {
 	JNICore *core = reinterpret_cast<JNICore*>(ptr);
 	core->core()->StopListen();
+	return 0;
 }
 
 
-JNIEXPORT void  JNICALL Java_com_dragonflow_FileTransfer_replyAccept(JNIEnv *env, jclass clazz, jlong ptr, jstring szReply, jint sock)
+JNIEXPORT jint  JNICALL Java_com_dragonflow_FileTransfer_replyAccept(JNIEnv *env, jclass clazz, jlong ptr, jstring szReply, jint sock)
 {
 	JNICore *core = reinterpret_cast<JNICore*>(ptr);
 	jboolean isCopy;
 	const char *pstrTmp = env->GetStringUTFChars(szReply, &isCopy);
 	core->core()->ReplyAccept(sock, pstrTmp);
 	env->ReleaseStringUTFChars(szReply, pstrTmp);
+	return 0;
 }
 
-JNIEXPORT void  JNICALL Java_com_dragonflow_FileTransfer_sendMessage(JNIEnv* env, jclass clazz, jlong ptr, jstring host, jint port,jstring message, jstring hostname)
+JNIEXPORT jint  JNICALL Java_com_dragonflow_FileTransfer_sendMessage(JNIEnv* env, jclass clazz, jlong ptr, jstring host, jstring message, jstring hostname)
 {
 	JNICore *core = reinterpret_cast<JNICore*>(ptr);
 	jboolean isCopy;
 	const char *pAddr = env->GetStringUTFChars(host, &isCopy);
 	const char *pMsg = env->GetStringUTFChars(message, &isCopy);
 	const char *pHost = env->GetStringUTFChars(hostname, &isCopy);
-	core->core()->SendMessage(pAddr, pMsg, pHost);
+	int nRet = core->core()->SendMsg(pAddr, pMsg, pHost);
 	env->ReleaseStringUTFChars(host, pAddr);
 	env->ReleaseStringUTFChars(message, pMsg);
 	env->ReleaseStringUTFChars(hostname, pHost);
+	return nRet;
 }
 
-JNIEXPORT void  JNICALL Java_com_dragonflow_FileTransfer_sendFiles(JNIEnv* env, jclass clazz, jlong ptr, jstring host, jobjectArray filelist, jstring owndevice, jstring owntype, jstring recdevice, jstring rectype, jstring sendtype)
+JNIEXPORT jint  JNICALL Java_com_dragonflow_FileTransfer_sendFiles(JNIEnv* env, jclass clazz, jlong ptr, jstring host, jobjectArray filelist, jstring owndevice, jstring owntype, jstring recdevice, jstring rectype, jstring sendtype)
 {
 	JNICore *core = reinterpret_cast<JNICore*>(ptr);
 	jboolean isCopy;
@@ -100,13 +104,14 @@ JNIEXPORT void  JNICALL Java_com_dragonflow_FileTransfer_sendFiles(JNIEnv* env, 
 		env->ReleaseStringUTFChars(jsText, pText);
 		env->DeleteLocalRef(jsText);
 	}
-	core->core()->SendFile(pAddress, pOwnDev, pOwnType, pRcvDev, pRcvType, pSndType, vecArray, 3);
+	int nRet = core->core()->SendFiles(pAddress, vecArray, pOwnDev, pOwnType, pRcvDev, pRcvType, pSndType);
 	env->ReleaseStringUTFChars(host, pAddress);
 	env->ReleaseStringUTFChars(owndevice, pOwnDev);
 	env->ReleaseStringUTFChars(owntype, pOwnType);
 	env->ReleaseStringUTFChars(recdevice, pRcvDev);
 	env->ReleaseStringUTFChars(rectype, pRcvType);
 	env->ReleaseStringUTFChars(sendtype, pSndType);
+	return nRet;
 }
 
 
@@ -119,9 +124,7 @@ JavaVM *CG::javaVM = 0;
 jclass CG::c_String = 0;
 
 jclass CG::c_FileTransfer = 0;
-jmethodID CG::m_OnDebug = 0;
 jmethodID CG::m_OnAccept = 0;
-jmethodID CG::m_OnAcceptFolder = 0;
 jmethodID CG::m_OnAcceptonFinish = 0;
 jmethodID CG::m_OnTransfer = 0;
 jmethodID CG::m_OnFinished = 0;
@@ -145,12 +148,11 @@ bool CG::init(JavaVM *jvm)
 	CG_CACHE_CLASS(c_String, "java/lang/String");
 	CG_CACHE_CLASS(c_FileTransfer, "com/dragonflow/FileTransfer");
 
-	CG_CACHE_METHOD(c_FileTransfer, m_OnDebug, "onDebug", "(Ljava/lang/String;)V");
-	CG_CACHE_METHOD(c_FileTransfer, m_OnAccept, "onAccept", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V");
-	CG_CACHE_METHOD(c_FileTransfer, m_OnAcceptFolder, "onAcceptFolder", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V");
-	CG_CACHE_METHOD(c_FileTransfer, m_OnAcceptonFinish, "onAcceptonFinish", "(Ljava/lang/String;[Ljava/lang/Object;)V");
-	CG_CACHE_METHOD(c_FileTransfer, m_OnTransfer, "onTransfer", "(JJLjava/lang/String;)V");
-	CG_CACHE_METHOD(c_FileTransfer, m_OnFinished, "onFinished", "(Ljava/lang/String;)V");
+	//CG_CACHE_METHOD(c_FileTransfer, m_OnDebug, "onDebug", "(Ljava/lang/String;)V");
+	CG_CACHE_METHOD(c_FileTransfer, m_OnAccept, "onAccept", "(Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V");
+	CG_CACHE_METHOD(c_FileTransfer, m_OnAcceptonFinish, "onAcceptonFinish", "(Ljava/lang/String;Ljava/lang/String;II)V");
+	CG_CACHE_METHOD(c_FileTransfer, m_OnTransfer, "onTransfer", "(JJLjava/lang/String;II)V");
+	CG_CACHE_METHOD(c_FileTransfer, m_OnFinished, "onFinished", "(Ljava/lang/String;I)V");
 	CG_CACHE_METHOD(c_FileTransfer, m_OnRecvMessage, "onRecvMessage", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
 	
 	return true;
