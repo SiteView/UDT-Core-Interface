@@ -455,6 +455,7 @@ DWORD WINAPI CUdtCore::_SendThread(LPVOID pParam)
 	char Head[8];
 	int nReturnCode = 108, nLen = 0, nPos = 0, nFileCount = 0;
 	int64_t nFileTotalSize = 0, nSendSize = 0, nLastSendSize = 0;
+	double iProgress;
 	string szAddr, szPort;
 	string szTmp, szFolderName, szFileName, szFilePath, szFinish = "NETFAIL", szError = "";
 	vector<string> vecFileName;
@@ -617,8 +618,9 @@ DWORD WINAPI CUdtCore::_SendThread(LPVOID pParam)
 				nLastSendSize = nSendSize;
 				CGuard::enterCS(pThis->m_Lock);
 				szTmp = sxt->fileName;
+				iProgress = sxt->iProgress;
 				CGuard::leaveCS(pThis->m_Lock);
-				pThis->m_pCallBack->onTransfer(nFileTotalSize, nLastSendSize, szTmp.c_str(), 2, client);
+				pThis->m_pCallBack->onTransfer(nFileTotalSize, nLastSendSize, iProgress, szTmp.c_str(), 2, client);
 				if (nSendSize == nFileTotalSize)
 				{
 					nReturnCode = 109;
@@ -806,6 +808,9 @@ DWORD WINAPI CUdtCore::_SendFiles(LPVOID pParam)
 
 					while (true)
 					{
+						UDT::TRACEINFO trace;
+						UDT::perfmon(client, &trace);
+
 						int64_t send = 0;
 						if (left > TO_SND)
 							send = UDT::sendfile(client, ifs, nOffset, TO_SND);
@@ -816,6 +821,11 @@ DWORD WINAPI CUdtCore::_SendFiles(LPVOID pParam)
 							goto Loop;
 						left -= send;
 						nSendSize += send;
+
+						CGuard::enterCS(pThis->m_Lock);
+						sxt->iProgress = trace.mbpsSendRate / 8;
+						CGuard::leaveCS(pThis->m_Lock);
+
 						if (left <= 0)
 							break;
 					}
@@ -1072,7 +1082,7 @@ DWORD WINAPI CUdtCore::_RecvFiles(LPVOID pParam)
 	char Head[8];
 	int64_t size;
 	int nLen = 0, nPos = 0, nRet = 0, nCount = 0;
-	int64_t nFileTotalSize = 0, nRecvSize = 0, iLastPercent = 0; 
+	int64_t nFileTotalSize = 0, nRecvSize = 0, iLastPercent = 0;
 	vector<string> vecFileName;
 	string szSlash = "";
 	string szTmp, strReplyPath = "", szFinish = "NETFAIL", szError = "", szFilePath = "", szFolder = "", szRcvFileName = "";
@@ -1203,6 +1213,9 @@ DWORD WINAPI CUdtCore::_RecvFiles(LPVOID pParam)
 			int64_t left = size;
 			while(left > 0)
 			{
+				UDT::TRACEINFO trace;
+				UDT::perfmon(client, &trace);
+
 				int64_t recv = 0;
 				if (left > TO_SND)
 					recv = UDT::recvfile(client, ofs, offset, TO_SND);
@@ -1214,13 +1227,14 @@ DWORD WINAPI CUdtCore::_RecvFiles(LPVOID pParam)
 
 				left -= recv;
 				nRecvSize += recv;
+
 				memset(Head, 0, 8);
 				memcpy(Head, "FPR", 3);
 				if (UDT::ERROR == UDT::send(cxt->sockCtrl, (char*)Head, 3, 0))
 					goto Loop;
 				if (UDT::ERROR == UDT::send(cxt->sockCtrl, (char*)&nRecvSize, sizeof(nRecvSize), 0))
 					goto Loop;
-				pThis->m_pCallBack->onTransfer((long)nFileTotalSize, nRecvSize, pstrFileName, 1, cxt->sockCtrl);
+				pThis->m_pCallBack->onTransfer((long)nFileTotalSize, nRecvSize, trace.mbpsRecvRate / 8, pstrFileName, 1, cxt->sockCtrl);
 			}
 			ofs.close();
 			// 文件夹，只回调一次
