@@ -67,7 +67,7 @@ void CUdtProxy::onFinished(const char * pstrMsg, int Type, int sock)
 		std::cout<< "onSendFinished:" << pstrMsg << std::endl;
 }
 
-void CUdtProxy::onTransfer(const int64_t nFileTotalSize, const int64_t nCurrent, const char* pstrFileName, int Type, int sock)
+void CUdtProxy::onTransfer(const int64_t nFileTotalSize, const int64_t nCurrent, const double iProgress, const char* pstrFileName, int Type, int sock)
 {
 	double dTotal = (double)nFileTotalSize;
 	double dPercent = nCurrent / dTotal;
