@@ -615,7 +615,10 @@ DWORD WINAPI CUdtCore::_SendThread(LPVOID pParam)
 			if (nSendSize <= nFileTotalSize && nSendSize > nLastSendSize)
 			{
 				nLastSendSize = nSendSize;
-				pThis->m_pCallBack->onTransfer(nFileTotalSize, nLastSendSize, szFileName.c_str(), 2, client);
+				CGuard::enterCS(pThis->m_Lock);
+				szTmp = sxt->fileName;
+				CGuard::leaveCS(pThis->m_Lock);
+				pThis->m_pCallBack->onTransfer(nFileTotalSize, nLastSendSize, szTmp.c_str(), 2, client);
 				if (nSendSize == nFileTotalSize)
 				{
 					nReturnCode = 109;
@@ -766,6 +769,28 @@ DWORD WINAPI CUdtCore::_SendFiles(LPVOID pParam)
 				if (UDT::ERROR == UDT::send(client, szFileName.c_str(), nLen, 0))
 					goto Loop;
 
+				// 文件夹，只回调一次
+				nPos = szFileName.find_first_of('/');
+				if (nPos < 0)
+				{
+					nPos = szFileName.find_first_of("\\");
+				}
+				if (nPos >= 0)
+				{
+					szTmp = szFileName.substr(0, nPos);
+					if (szTmp != szAccept)
+					{
+						szAccept = szTmp;
+						szFileName = (*it2).c_str();
+					}
+				}
+				else
+					szFileName = szFilePath;
+
+				CGuard::enterCS(pThis->m_Lock);
+				sxt->fileName = szFileName;
+				CGuard::leaveCS(pThis->m_Lock);
+
 				// open the file
 				int64_t nFileSize = 0, nOffset = 0, left = 0;
 				fstream ifs(szFilePath.c_str(), ios::binary | ios::in);
@@ -795,23 +820,7 @@ DWORD WINAPI CUdtCore::_SendFiles(LPVOID pParam)
 							break;
 					}
 					ifs.close();
-					// 文件夹，只回调一次
-					nPos = szFileName.find_first_of('/');
-					if (nPos < 0)
-					{
-						nPos = szFileName.find_first_of("\\");
-					}
-					if (nPos >= 0)
-					{
-						szTmp = szFileName.substr(0, nPos);
-						if (szTmp != szAccept)
-						{
-							szAccept = szTmp;
-							pThis->m_pCallBack->onAcceptonFinish((char *)sxt->strAddr, (*it2).c_str(), 2, client);
-						}
-					}
-					else
-						pThis->m_pCallBack->onAcceptonFinish((char *)sxt->strAddr, szFilePath.c_str(), 2, client);
+					pThis->m_pCallBack->onAcceptonFinish((char *)sxt->strAddr, szFileName.c_str(), 2, client);
 				}
 				catch (...)
 				{

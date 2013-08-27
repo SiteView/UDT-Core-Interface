@@ -93,6 +93,7 @@ private:
 		std::vector<std::string> vecDirs;
 		std::vector<std::string> vecFiles;
 		bool bSendFile;
+		std::string fileName;
 		pthread_t hThread;
 		pthread_cond_t cond;
 		pthread_mutex_t lock;
