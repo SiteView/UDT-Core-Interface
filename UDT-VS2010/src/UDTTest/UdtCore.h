@@ -71,6 +71,7 @@ private:
 		char strFilePort[32];
 		int64_t nFileTotalSize;
 		int64_t nRecvSize;
+		int nFileCount;
 		sockaddr_storage clientaddr;
 		pthread_t hThread;
 		pthread_cond_t cond;

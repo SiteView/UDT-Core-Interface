@@ -47,7 +47,14 @@ void CUdtProxy::onAccept(const char* pstrAddr, const char* pstrFileName, int nFi
 	}
 
 	m_sock = sock;
-	m_pUdt->ReplyAccept(sock, path);
+	if (nFileCount == 1)
+	{
+		strcat(path, pstrFileName);
+		m_pUdt->ReplyAccept(sock, path);
+	}
+	else
+		m_pUdt->ReplyAccept(sock, path);
+
 	std::cout<< "save file to:" << path << std::endl;
 }
 
