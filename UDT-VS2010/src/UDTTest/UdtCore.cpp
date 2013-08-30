@@ -159,6 +159,14 @@ int CUdtCore::SendFiles(const char* pstrAddr, const std::vector<std::string> vec
 		UDT::close(sockCtrl);
 		return 0;
 	}
+
+	// wait 1s
+#ifndef WIN32
+	sleep(1);
+#else
+	Sleep(1000);
+#endif
+
 	// connect to FilePort
 	if (CreateUDTSocket(sockFile, strFilePort) < 0)
 	{
@@ -314,7 +322,6 @@ DWORD WINAPI CUdtCore::_ListenRcvCtrlThread(LPVOID pParam)
 	sockaddr_storage clientaddr;
 	int addrlen = sizeof(clientaddr);
 	UDTSOCKET client;
-	LPCLIENTCONTEXT cxt = new CLIENTCONTEXT;
 
 	while (true)
 	{
@@ -351,6 +358,8 @@ DWORD WINAPI CUdtCore::_ListenRcvCtrlThread(LPVOID pParam)
 		char clientservice[NI_MAXSERV];
 		getnameinfo((sockaddr *)&clientaddr, sizeof(clientaddr), clienthost, sizeof(clienthost), clientservice, sizeof(clientservice), NI_NUMERICHOST|NI_NUMERICSERV);
 		cout << "Recv Ctrl connection: " << clienthost << ":" << clientservice << endl;
+
+		LPCLIENTCONTEXT cxt = new CLIENTCONTEXT;
 		memset(cxt, 0, sizeof(cxt));
 		sprintf(cxt->strAddr, "%s", clienthost);
 		sprintf(cxt->strCtrlPort, "%s", clientservice);
@@ -528,30 +537,6 @@ DWORD WINAPI CUdtCore::_SendThread(LPVOID pParam)
 
 	while (true)
 	{
-		/*
-#ifndef WIN32
-		pthread_mutex_lock(&sxt->lock);
-		timeval now;
-		timespec timeout;
-		gettimeofday(&now, 0);
-		timeout.tv_sec = now.tv_sec + 1;
-		timeout.tv_nsec = now.tv_usec * 1000;
-		int rc = pthread_cond_timedwait(&sxt->cond, &sxt->lock, &timeout);
-		pthread_mutex_unlock(&sxt->lock);
-		if (rc != ETIMEDOUT)
-		{
-			szFinish = "STOP";
-			break;
-		}
-#else
-		if (WAIT_TIMEOUT != WaitForSingleObject(sxt->cond, 1000))
-		{
-			std::cout << "_SendThread timeout" << endl;
-			szFinish = "STOP";
-			break;
-		}
-#endif	*/
-
 		memset(Head, 0, 8);
 		if (UDT::ERROR == UDT::recv(client, (char*)Head, 3, 0))
 			goto Loop;

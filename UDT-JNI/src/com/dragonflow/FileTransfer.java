@@ -113,7 +113,7 @@ public class FileTransfer {
      * @param type 1=接收类型进度  2=发送类型进度
      * @param sock      套接字索引
      */
-    public void onTransfer(long sum, long current, String filename, int type , int sock)
+    public void onTransfer(long sum, long current, double iProgress, String filename, int type , int sock)
     {
     	System.out.println("------onTransfer:" + sum + ":" + current);
     	//FileTransfer.this.hook_onTransfer(sum, current, filename);

@@ -71,13 +71,13 @@ void JNICore::onFinished(const char * pstrMsg, int Type, int sock)
 }
 
 
-void JNICore::onTransfer(const int64_t nFileTotalSize, const int64_t nCurrent, const char* pstrFileName, int Type, int sock)
+void JNICore::onTransfer(const int64_t nFileTotalSize, const int64_t nCurrent, const double iProgress, const char* pstrFileName, int Type, int sock)
 {
 	VMGuard vmguard;
 	if (JNIEnv *env = vmguard.env())
 	{
 		jstring jsText = env->NewStringUTF(pstrFileName);
-		env->CallVoidMethod(m_delegateObj, CG::m_OnTransfer, nFileTotalSize, nCurrent, jsText, Type, sock);
+		env->CallVoidMethod(m_delegateObj, CG::m_OnTransfer, nFileTotalSize, nCurrent, iProgress, jsText, Type, sock);
 	}
 }
 

@@ -44,7 +44,7 @@ public:
 	virtual void onAccept(const char* pstrAddr, const char* pstrFileName, int nFileCount, const char* recdevice, const char* rectype, const char* owndevice, const char* owntype, const char* SendType, int sock) = 0;
 	virtual void onAcceptonFinish(const char* pstrAddr, const char* pFileName, int Type, int sock) = 0;
 	virtual void onFinished(const char * pstrMsg, int Type, int sock) = 0;
-	virtual void onTransfer(const int64_t nFileTotalSize, const int64_t nCurrent, const char* pstrFileName, int Type, int sock) = 0;
+	virtual void onTransfer(const int64_t nFileTotalSize, const int64_t nCurrent, const double iProgress, const char* pstrFileName, int Type, int sock) = 0;
 	virtual void onRecvMessage(const char* pstrMsg, const char* pIpAddr, const char* pHostName) = 0;
 };
 
@@ -71,6 +71,7 @@ private:
 		char strFilePort[32];
 		int64_t nFileTotalSize;
 		int64_t nRecvSize;
+		int nFileCount;
 		sockaddr_storage clientaddr;
 		pthread_t hThread;
 		pthread_cond_t cond;
@@ -93,6 +94,8 @@ private:
 		std::vector<std::string> vecDirs;
 		std::vector<std::string> vecFiles;
 		bool bSendFile;
+		std::string fileName;
+		double iProgress;
 		pthread_t hThread;
 		pthread_cond_t cond;
 		pthread_mutex_t lock;

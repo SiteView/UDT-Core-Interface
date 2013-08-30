@@ -151,7 +151,7 @@ bool CG::init(JavaVM *jvm)
 	//CG_CACHE_METHOD(c_FileTransfer, m_OnDebug, "onDebug", "(Ljava/lang/String;)V");
 	CG_CACHE_METHOD(c_FileTransfer, m_OnAccept, "onAccept", "(Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V");
 	CG_CACHE_METHOD(c_FileTransfer, m_OnAcceptonFinish, "onAcceptonFinish", "(Ljava/lang/String;Ljava/lang/String;II)V");
-	CG_CACHE_METHOD(c_FileTransfer, m_OnTransfer, "onTransfer", "(JJLjava/lang/String;II)V");
+	CG_CACHE_METHOD(c_FileTransfer, m_OnTransfer, "onTransfer", "(JJDLjava/lang/String;II)V");
 	CG_CACHE_METHOD(c_FileTransfer, m_OnFinished, "onFinished", "(Ljava/lang/String;I)V");
 	CG_CACHE_METHOD(c_FileTransfer, m_OnRecvMessage, "onRecvMessage", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
 	
