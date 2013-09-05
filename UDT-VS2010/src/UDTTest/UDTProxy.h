@@ -21,6 +21,7 @@ protected:
 	virtual void onFinished(const char * pstrMsg, int Type, int sock);
 	virtual void onTransfer(const int64_t nFileTotalSize, const int64_t nCurrent, const double iProgress, const char* pstrFileName, int Type, int sock);
 	virtual void onRecvMessage(const char* pstrMsg, const char* pIpAddr, const char* pHostName);
+	virtual void onTTSPing(const char* pstrIp, int Type);
 
 private:
 	static CUdtProxy * m_pUdtProxy;

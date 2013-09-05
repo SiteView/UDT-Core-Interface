@@ -8,6 +8,7 @@ CUdtCore::CUdtCore(CUDTCallBack * pCallback)
 	, m_bListenStatus(false)
 	, m_bSendStatus(false)
 	, m_bRecvStatus(false)
+	, m_bTTSPing(false)
 	, m_nCtrlPort(7777)
 	, m_nFilePort(7778)
 {
@@ -20,6 +21,8 @@ CUdtCore::CUdtCore(CUDTCallBack * pCallback)
 	pthread_cond_init(&m_CondLisFile, NULL);
 	pthread_cond_init(&m_CondSnd, NULL);
 	pthread_cond_init(&m_CondRcv, NULL);
+	pthread_mutex_init(&m_LockTTS, NULL);
+	pthread_cond_init(&m_CondTTS, NULL);
 #else
 	m_Lock				= CreateMutex(NULL, false, NULL);
 	m_LockLis			= CreateMutex(NULL, false, NULL);
@@ -29,6 +32,8 @@ CUdtCore::CUdtCore(CUDTCallBack * pCallback)
 	m_CondLisFile	= CreateEvent(NULL, false, false, NULL);
 	m_CondSnd		= CreateEvent(NULL, false, false, NULL);
 	m_CondRcv		= CreateEvent(NULL, false, false, NULL);
+	m_LockTTS		= CreateMutex(NULL, false, NULL);
+	m_CondTTS	= CreateEvent(NULL, false, false, NULL);
 #endif
 }
 
@@ -44,6 +49,8 @@ CUdtCore::~CUdtCore()
 	pthread_cond_destroy(&m_CondLisFile);
 	pthread_cond_destroy(&m_CondSnd);
 	pthread_cond_destroy(&m_CondRcv);
+	pthread_mutex_destroy(&m_LockTTS);
+	pthread_cond_destroy(&m_CondTTS);
 #else
 	CloseHandle(m_Lock);
 	CloseHandle(m_LockLis);
@@ -53,6 +60,8 @@ CUdtCore::~CUdtCore()
 	CloseHandle(m_CondLisFile);
 	CloseHandle(m_CondSnd);
 	CloseHandle(m_CondRcv);
+	CloseHandle(m_LockTTS);
+	CloseHandle(m_CondTTS);
 #endif
 }
 
@@ -74,11 +83,19 @@ int CUdtCore::StartListen(const int nCtrlPort, const int nFilePort)
 		// create listen thread for accept client connect
 #ifndef WIN32
 		pthread_create(&m_hThrLisCtrl, NULL, _ListenRcvCtrlThread, this);
+		pthread_detach(m_hThrLisCtrl);
 		pthread_create(&m_hThrLisFile, NULL, _ListenRcvFileThread, this);
+		pthread_detach(m_hThrLisFile);
 #else
-		DWORD dwThreadID;
-		m_hThrLisCtrl = CreateThread(NULL, 0, _ListenRcvCtrlThread, this, NULL, &dwThreadID);
-		m_hThrLisFile = CreateThread(NULL, 0, _ListenRcvFileThread, this, NULL, &dwThreadID);
+		m_hThrLisCtrl = CreateThread(NULL, 0, _ListenRcvCtrlThread, this, NULL, NULL);
+		m_hThrLisFile = CreateThread(NULL, 0, _ListenRcvFileThread, this, NULL, NULL);
+#endif
+
+#ifndef WIN32
+		pthread_create(&m_hThrTTS, NULL, _WorkThreadProc, this);
+		pthread_detach(m_hThrTTS);
+#else
+		m_hThrTTS = CreateThread(NULL, 0, _WorkThreadProc, this, 0, NULL);
 #endif
 
 		m_bListenStatus = true;
@@ -90,6 +107,7 @@ int CUdtCore::StartListen(const int nCtrlPort, const int nFilePort)
 
 int CUdtCore::SendMsg(const char* pstrAddr, const char* pstrMsg, const char* pstrHostName)
 {
+	UDT::startup();
 	int nLen = 0, nReturnCode = 108;
 	char Head[8];
 
@@ -98,9 +116,15 @@ int CUdtCore::SendMsg(const char* pstrAddr, const char* pstrMsg, const char* pst
 	char strPort[32];
 	sprintf(strPort, "%d", 7777);
 	if (CreateUDTSocket(client, strPort) < 0)
-		goto Loop;
+	{
+		m_pCallBack->onFinished("Create fail!", nReturnCode, client);
+		return 0;
+	}
 	if (UDT_Connect(client, pstrAddr, strPort) < 0)
-		goto Loop;
+	{
+		m_pCallBack->onFinished("Connect fail!", nReturnCode, client);
+		return 0;
+	}
 
 	// send flags
 	memset(Head, 0, 8);
@@ -149,14 +173,12 @@ int CUdtCore::SendFiles(const char* pstrAddr, const std::vector<std::string> vec
 	// connect to CtrlPort
 	if (CreateUDTSocket(sockCtrl, strCtrlPort) < 0)
 	{
-		m_pCallBack->onFinished("RETURN", nReturnCode, sockCtrl);
-		UDT::close(sockCtrl);
+		m_pCallBack->onFinished("Create fail!", nReturnCode, sockCtrl);
 		return 0;
 	}
 	if (UDT_Connect(sockCtrl, pstrAddr, strCtrlPort) < 0)
 	{
-		m_pCallBack->onFinished("NETFAIL", nReturnCode, sockCtrl);
-		UDT::close(sockCtrl);
+		m_pCallBack->onFinished("Connect fail!", nReturnCode, sockCtrl);
 		return 0;
 	}
 
@@ -168,16 +190,9 @@ int CUdtCore::SendFiles(const char* pstrAddr, const std::vector<std::string> vec
 #endif
 
 	// connect to FilePort
-	if (CreateUDTSocket(sockFile, strFilePort) < 0)
+	if (CreateUDTSocket(sockFile, strFilePort) < 0 || UDT_Connect(sockFile, pstrAddr, strFilePort) < 0)
 	{
-		m_pCallBack->onFinished("NETFAIL", 2, sockFile);
-		UDT::close(sockFile);
-		return 0;
-	}
-	if (UDT_Connect(sockFile, pstrAddr, strFilePort) < 0)
-	{
-		m_pCallBack->onFinished("NETFAIL", 2, sockFile);
-		UDT::close(sockFile);
+		m_pCallBack->onFinished("Connect fail!", 108, sockFile);
 		return 0;
 	}
 
@@ -305,9 +320,13 @@ void CUdtCore::StopListen()
 	pthread_mutex_lock(&m_LockLis);
 	pthread_cond_signal(&m_CondLisFile);
 	pthread_mutex_unlock(&m_LockLis);
+	pthread_mutex_lock(&m_LockTTS);
+	pthread_cond_signal(&m_CondTTS);
+	pthread_mutex_unlock(&m_LockTTS);
 #else
 	SetEvent(m_CondLisCtrl);
 	SetEvent(m_CondLisFile);
+	SetEvent(m_CondTTS);
 #endif
 }
 
@@ -359,11 +378,28 @@ DWORD WINAPI CUdtCore::_ListenRcvCtrlThread(LPVOID pParam)
 		getnameinfo((sockaddr *)&clientaddr, sizeof(clientaddr), clienthost, sizeof(clienthost), clientservice, sizeof(clientservice), NI_NUMERICHOST|NI_NUMERICSERV);
 		cout << "Recv Ctrl connection: " << clienthost << ":" << clientservice << endl;
 
-		LPCLIENTCONTEXT cxt = new CLIENTCONTEXT;
+		CLIENTCONTEXT * cxt = new CLIENTCONTEXT;
 		memset(cxt, 0, sizeof(cxt));
 		sprintf(cxt->strAddr, "%s", clienthost);
 		sprintf(cxt->strCtrlPort, "%s", clientservice);
 		cxt->sockCtrl = client;
+
+		CGuard::enterCS(pThis->m_LockTTS);
+		string ipaddr = "";
+		for (vector<string>::iterator iter = pThis->VEC_IP.begin(); iter != pThis->VEC_IP.end(); iter++)
+		{
+			if (strcmp(iter->c_str(), cxt->strAddr) == 0)
+			{
+				ipaddr = *iter;
+				break;
+			}
+		}
+		if (ipaddr != "")
+		{
+			pThis->m_pCallBack->onTTSPing((char *)cxt->strAddr, 2);
+		}
+		CGuard::leaveCS(pThis->m_LockTTS);
+
 		pThis->VEC_CXT.push_back(cxt);
 		pthread_t hHandle;
 #ifndef WIN32
@@ -662,7 +698,6 @@ Loop:
 	}
 
 	UDT::close(client);
-	delete sxt;
 
 #ifndef WIN32
 	return NULL;
@@ -1238,6 +1273,107 @@ Loop:
 #endif
 }
 
+void CUdtCore::TTSPing(const std::vector<std::string> vecIpAddress)
+{
+	CGuard::enterCS(m_LockTTS);
+	VEC_IP = vecIpAddress;
+	CGuard::leaveCS(m_LockTTS);
+}
+
+#ifndef WIN32
+void * CUdtCore::_WorkThreadProc(void * pParam)
+#else
+DWORD WINAPI CUdtCore::_WorkThreadProc(LPVOID pParam)
+#endif
+{
+	CUdtCore * pThis = (CUdtCore *)pParam;
+
+	UDTSOCKET client;
+	vector<string> vecIP;
+	//char Head[8];
+	char strPort[32] = "7777";
+
+	while (true)
+	{
+#ifndef WIN32
+		pthread_mutex_lock(&pThis->m_LockTTS);
+		timeval now;
+		timespec timeout;
+		gettimeofday(&now, 0);
+		timeout.tv_sec = now.tv_sec + 1;
+		timeout.tv_nsec = now.tv_usec * 1000;
+
+		int rc = pthread_cond_timedwait(&pThis->m_CondTTS, &pThis->m_LockTTS, &timeout);
+		pthread_mutex_unlock(&pThis->m_LockTTS);
+		if (rc != ETIMEDOUT)
+		{
+			cout << "_ListenThreadProc timeout" << endl;
+			break;
+		}
+
+#else
+		if (WAIT_TIMEOUT != WaitForSingleObject(pThis->m_CondTTS, 1000))
+		{
+			std::cout << "_ListenThreadProc timeout" << endl;
+			break;
+		}
+#endif
+
+		CGuard::enterCS(pThis->m_LockTTS);
+		vecIP = pThis->VEC_IP;
+		CGuard::leaveCS(pThis->m_LockTTS);
+
+		for (vector<string>::iterator it = vecIP.begin(); it != vecIP.end(); it++)
+		{
+			for (int i = 0; i < 3; i++)
+			{
+				if (pThis->CreateUDTSocket(client, strPort) < 0)
+				{
+					UDT::close(client);
+					continue;
+				}
+
+				if (pThis->UDT_Connect(client, it->c_str(), strPort) < 0)
+				{
+					// wait 1s
+#ifndef WIN32
+					_sleep(100000);
+#else
+					Sleep(200);
+#endif
+					if (i == 2)
+					{
+						pThis->m_pCallBack->onTTSPing(it->c_str(), 1);
+						CGuard::enterCS(pThis->m_LockTTS);
+						for (vector<string>::iterator it1 = pThis->VEC_IP.begin(); it1 != pThis->VEC_IP.end();)
+						{
+							if (*it1 == *it)
+							{
+								it1 = pThis->VEC_IP.erase(it1);
+							}
+							else
+								it1++;
+						}
+						CGuard::leaveCS(pThis->m_LockTTS);
+						break;
+					}
+				}
+				else
+				{
+					UDT::close(client);
+					break;
+				}
+				//UDT::close(client);
+			}
+		}
+	}
+
+#ifndef WIN32
+	return NULL;
+#else
+	return 0;
+#endif
+}
 
 //////////////////////////////////////////////////////////////////////////
 // private method

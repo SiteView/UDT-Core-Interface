@@ -89,3 +89,13 @@ void CUdtProxy::onRecvMessage(const char* pstrMsg, const char* pIpAddr, const ch
 {
 	std::cout<< "Recv message:" << pstrMsg << std::endl;
 }
+
+void CUdtProxy::onTTSPing(const char* pstrIp, int Type)
+{
+	if (Type == 1)
+	{
+		std::cout<< "Remove IP:" << pstrIp << std::endl;
+	}
+	else
+		std::cout<< "Add IP:" << pstrIp << std::endl;
+}
