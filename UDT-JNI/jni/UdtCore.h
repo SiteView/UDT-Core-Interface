@@ -27,7 +27,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <vector>
-#include <map>
 #include <string.h>
 #include <fstream>
 #include <iostream>
@@ -37,7 +36,7 @@
 #include "cc.h"
 #include "common.h"
 
-#define TO_SND 1024*500		// 文件发送数据块大小：((1(byte) * 1024)(kb) * 1024)(mb)
+#define TO_SND 1024*100		// 文件发送数据块大小：((1(byte) * 1024)(kb) * 1024)(mb)
 
 class CUDTCallBack
 {
@@ -65,47 +64,61 @@ public:
 	void StopListen();
 
 private:
-	typedef struct _ClientContext
+	enum OP_TYPE
 	{
-		UDTSOCKET sockCtrl;
-		UDTSOCKET sockFile;
-		char strAddr[32];
-		char strCtrlPort[32];
-		char strFilePort[32];
-		int64_t nFileTotalSize;
-		int64_t nRecvSize;
-		int nFileCount;
-		sockaddr_storage clientaddr;
-		pthread_t hThread;
+		OP_SND_CTRL = 0,
+		OP_SND_FILE,
+		OP_RCV_CTRL,
+		OP_RCV_FILE
+	};
+
+	typedef struct _ListenSocket
+	{
+		UDTSOCKET sockListen;
+		UDTSOCKET sockAccept;
+		char strServerPort[32];
+		char strServerAddr[32];
+		bool bListen;
+		pthread_t hHand;
 		pthread_cond_t cond;
 		pthread_mutex_t lock;
-	}CLIENTCONTEXT, *LPCLIENTCONTEXT;
+		OP_TYPE Type;
+		CUdtCore * pThis;
+	}LISTENSOCKET, *PLISTENSOCKET;
 
-	typedef struct _ServerContext
+	typedef struct _ClientConext
 	{
-		UDTSOCKET sockCtrl;
-		UDTSOCKET sockFile;
-		char strAddr[32];
-		char strCtrlPort[32];
-		char strFilePort[32];
+		UDTSOCKET sockListen;
+		UDTSOCKET sockAccept;
+		char strServerPort[32];
+		char strServerAddr[32];
+		char strClientPort[32];
+		char strClientAddr[32];
 		char ownDev[128];
 		char ownType[128];
 		char recvDev[128];
 		char recvType[128];
 		char sendType[128];
-		std::vector<std::string> vecFile;
-		std::vector<std::string> vecDirs;
-		std::vector<std::string> vecFiles;
-		bool bSendFile;
-		std::string fileName;
+		int64_t nFileTotalSize;
+		int64_t nRecvSize;
+		int nCtrlFileGroup;
+		int nFileCount;
 		double iProgress;
-		pthread_t hThread;
-		pthread_cond_t cond;
-		pthread_mutex_t lock;
-	}SERVERCONTEXT, *LPSERVERCONTEXT;
+		std::string fileName;
+		std::string fileSavePath;
+		std::vector<std::string> vecFiles;
+		std::vector<std::string> vecFilePath;
+		OP_TYPE Type;
+		CUdtCore * pThis;
+	}CLIENTCONEXT, *PCLIENTCONEXT;
 
 	void SearchFileInDirectroy(const std::string & szPath, int64_t & nTotalSize, std::vector<std::string> & vecDirName, std::vector<std::string> & vecFileName);
 	void CreateDirectroy(const std::string & szPath);
+	void ProcessAccept(LISTENSOCKET * cxt, std::fstream & log);
+	int ProcessSendCtrl(CLIENTCONEXT * cxt);
+	int ProcessSendFile(CLIENTCONEXT * cxt);
+	int ProcessRecvFile(CLIENTCONEXT * cxt);
+	int InitListenSocket(const char* pstrPort, UDTSOCKET & sockListen);
 	int CreateTCPSocket(SYSSOCKET & ssock, const char* pstrPort, bool bBind = false, bool rendezvous = false);
 	int CreateUDTSocket(UDTSOCKET & usock, const char* pstrPort, bool bBind = false, bool rendezvous = false);
 	int TCP_Connect(SYSSOCKET& ssock, const char* pstrAddr, const char* pstrPort);
@@ -113,56 +126,19 @@ private:
 
 private:
 	CUDTCallBack * m_pCallBack;
+	std::vector<PLISTENSOCKET> VEC_LISTEN;
+	std::vector<PCLIENTCONEXT> VEC_CLIENT;
 
-	std::vector<LPCLIENTCONTEXT> VEC_CXT;
-	std::vector<LPSERVERCONTEXT> VEC_SXT;
-	std::vector<std::string> VEC_IP;
-
-	bool m_bTTSPing;
-
-	int m_eid;
-	UDTSOCKET m_sockListenCtrlCmd;
-	UDTSOCKET m_sockListenRcvFile;
 	int m_nCtrlPort;
 	int m_nFilePort;
-	std::string m_szReplyfilepath;
-	std::string m_szFileName;
-	bool m_bSendStatus;
-	bool m_bRecvStatus;
 	bool m_bListenStatus;
 
-	pthread_mutex_t m_LockLis;
-	pthread_mutex_t m_LockSnd;
-	pthread_mutex_t m_LockRcv;
 	pthread_mutex_t m_Lock;
-	pthread_mutex_t m_LockTTS;
-
-	pthread_cond_t m_CondLisCtrl;
-	pthread_cond_t m_CondLisFile;
-	pthread_cond_t m_CondSnd;
-	pthread_cond_t m_CondRcv;
-	pthread_cond_t m_CondTTS;
-
-	pthread_t m_hThrLisCtrl;
-	pthread_t m_hThrLisFile;
-	pthread_t m_hThrSnd;
-	pthread_t m_hThrRcv;
-	pthread_t m_hThrTTS;
 #ifndef WIN32
-	static void * _ListenRcvCtrlThread(void * pParam);
-	static void * _ListenRcvFileThread(void * pParam);
-	static void * _SendThread(void * pParam);
-	static void * _RecvThread(void * pParam);
-	static void * _SendFiles(void * pParam);
-	static void * _RecvFiles(void * pParam);
+	static void * _ListenThreadProc(void * pParam);
 	static void * _WorkThreadProc(void * pParam);
 #else
-	static DWORD WINAPI _ListenRcvCtrlThread(LPVOID pParam);
-	static DWORD WINAPI _ListenRcvFileThread(LPVOID pParam);
-	static DWORD WINAPI _SendThread(LPVOID pParam);
-	static DWORD WINAPI _RecvThread(LPVOID pParam);
-	static DWORD WINAPI _SendFiles(LPVOID pParam);
-	static DWORD WINAPI _RecvFiles(LPVOID pParam);
+	static DWORD WINAPI _ListenThreadProc(LPVOID pParam);
 	static DWORD WINAPI _WorkThreadProc(LPVOID pParam);
 #endif
 };
