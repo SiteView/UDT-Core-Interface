@@ -30,10 +30,11 @@ CUdtCore *JNICore::core() const
 bool JNICore::init(JNIEnv *env, jobject delegateObj)
 {
 	m_delegateObj = env->NewGlobalRef(delegateObj);
+
 	return true;
 }
 
-void JNICore::onAccept(const char* pstrIpAddr, const char* pstrFileName, int nFileCount, const char* pstrRecdevice, const char* pstrRectype, const char* pstrOwndevice, const char* pstrOwntype, const char* pstrSendType, int sock)
+void JNICore::onAccept(const char* pstrIpAddr, const char* pstrFileName, int nFileCount, const int64_t nFileSize, const char* pstrRecdevice, const char* pstrRectype, const char* pstrOwndevice, const char* pstrOwntype, const char* pstrSendType, const char* pstrFileType, int sock)
 {
 	VMGuard vmguard;
 	if (JNIEnv *env = vmguard.env())
@@ -45,7 +46,8 @@ void JNICore::onAccept(const char* pstrIpAddr, const char* pstrFileName, int nFi
 		jstring jsOwndevice = env->NewStringUTF(pstrOwndevice);
 		jstring jsOwntype = env->NewStringUTF(pstrOwntype);
 		jstring jsSndType = env->NewStringUTF(pstrSendType);
-		env->CallVoidMethod(m_delegateObj, CG::m_OnAccept, jsAddr, jsFile, nFileCount, jsRecdevice, jsRectype, jsOwndevice, jsOwntype, jsSndType, sock);
+		jstring jsFileType = env->NewStringUTF(pstrFileType);
+		env->CallVoidMethod(m_delegateObj, CG::m_OnAccept, jsAddr, jsFile, nFileCount, nFileSize, jsRecdevice, jsRectype, jsOwndevice, jsOwntype, jsSndType, jsFileType, sock);
 	}
 }
 
@@ -90,6 +92,16 @@ void JNICore::onRecvMessage(const char* pstrMsg, const char* pstrIpAddr, const c
 		jstring jsHost = env->NewStringUTF(pstrHostName);
 		jstring jsText = env->NewStringUTF(pstrMsg);
 		env->CallVoidMethod(m_delegateObj, CG::m_OnRecvMessage, jsText, jsAddr, jsHost);
+	}
+}
+
+void JNICore::onTTSPing(const char* pstrIp, int Type)
+{
+	VMGuard vmguard;
+	if (JNIEnv *env = vmguard.env())
+	{
+		jstring jsAddr = env->NewStringUTF(pstrIp);
+		env->CallVoidMethod(m_delegateObj, CG::m_OnHeartAccept, jsAddr, Type);
 	}
 }
 

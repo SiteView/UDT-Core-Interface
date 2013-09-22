@@ -42,7 +42,7 @@
 class CUDTCallBack
 {
 public:
-	virtual void onAccept(const char* pstrAddr, const char* pstrFileName, int nFileCount, const char* recdevice, const char* rectype, const char* owndevice, const char* owntype, const char* SendType, int sock) = 0;
+	virtual void onAccept(const char* pstrAddr, const char* pstrFileName, int nFileCount, const char* recdevice, const char* rectype, const char* owndevice, const char* owntype, const char* SendType, const char* FileType, int sock) = 0;
 	virtual void onAcceptonFinish(const char* pstrAddr, const char* pFileName, int Type, int sock) = 0;
 	virtual void onFinished(const char * pstrMsg, int Type, int sock) = 0;
 	virtual void onTransfer(const int64_t nFileTotalSize, const int64_t nCurrent, const double iProgress, const char* pstrFileName, int Type, int sock) = 0;
@@ -106,9 +106,8 @@ private:
 
 	void SearchFileInDirectroy(const std::string & szPath, int64_t & nTotalSize, std::vector<std::string> & vecDirName, std::vector<std::string> & vecFileName);
 	void CreateDirectroy(const std::string & szPath);
-	int InitListenSocket(const int nPort, UDTSOCKET & sockListen);
-	int CreateTCPSocket(SYSSOCKET & ssock, const char* pstrPort, bool rendezvous = false);
-	int CreateUDTSocket(UDTSOCKET & usock, const char* pstrPort, bool rendezvous = false);
+	int CreateTCPSocket(SYSSOCKET & ssock, const char* pstrPort, bool bBind = false, bool rendezvous = false);
+	int CreateUDTSocket(UDTSOCKET & usock, const char* pstrPort, bool bBind = false, bool rendezvous = false);
 	int TCP_Connect(SYSSOCKET& ssock, const char* pstrAddr, const char* pstrPort);
 	int UDT_Connect(UDTSOCKET & usock, const char* pstrAddr, const char* pstrPort);
 
@@ -127,6 +126,7 @@ private:
 	int m_nCtrlPort;
 	int m_nFilePort;
 	std::string m_szReplyfilepath;
+	std::string m_szFileName;
 	bool m_bSendStatus;
 	bool m_bRecvStatus;
 	bool m_bListenStatus;

@@ -69,6 +69,24 @@ JNIEXPORT jint  JNICALL Java_com_dragonflow_FileTransfer_replyAccept(JNIEnv *env
 	return 0;
 }
 
+JNIEXPORT void  JNICALL Java_com_dragonflow_FileTransfer_heart(JNIEnv *env, jclass clazz, jlong ptr, jobjectArray iplist)
+{
+	JNICore *core = reinterpret_cast<JNICore*>(ptr);
+	jboolean isCopy;
+
+	const char *pText;
+	std::vector<std::string> vecArray;
+	for (jsize i = 0; i < env->GetArrayLength(iplist); i++)
+	{
+		jstring jsText = static_cast<jstring>(env->GetObjectArrayElement(iplist, i));
+		pText = env->GetStringUTFChars(jsText, &isCopy);
+		vecArray.push_back(pText);
+		env->ReleaseStringUTFChars(jsText, pText);
+		env->DeleteLocalRef(jsText);
+	}
+	core->core()->TTSPing(vecArray);
+}
+
 JNIEXPORT jint  JNICALL Java_com_dragonflow_FileTransfer_sendMessage(JNIEnv* env, jclass clazz, jlong ptr, jstring host, jstring message, jstring hostname)
 {
 	JNICore *core = reinterpret_cast<JNICore*>(ptr);
@@ -129,6 +147,7 @@ jmethodID CG::m_OnAcceptonFinish = 0;
 jmethodID CG::m_OnTransfer = 0;
 jmethodID CG::m_OnFinished = 0;
 jmethodID CG::m_OnRecvMessage = 0;
+jmethodID CG::m_OnHeartAccept = 0;
 
 
 #define CG_CACHE_CLASS(v, n) { jclass cc = env->FindClass(n); if (!cc) { return false; } v = static_cast<jclass>(env->NewGlobalRef(cc)); }
@@ -149,11 +168,12 @@ bool CG::init(JavaVM *jvm)
 	CG_CACHE_CLASS(c_FileTransfer, "com/dragonflow/FileTransfer");
 
 	//CG_CACHE_METHOD(c_FileTransfer, m_OnDebug, "onDebug", "(Ljava/lang/String;)V");
-	CG_CACHE_METHOD(c_FileTransfer, m_OnAccept, "onAccept", "(Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V");
+	CG_CACHE_METHOD(c_FileTransfer, m_OnAccept, "onAccept", "(Ljava/lang/String;Ljava/lang/String;IJLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V");
 	CG_CACHE_METHOD(c_FileTransfer, m_OnAcceptonFinish, "onAcceptonFinish", "(Ljava/lang/String;Ljava/lang/String;II)V");
 	CG_CACHE_METHOD(c_FileTransfer, m_OnTransfer, "onTransfer", "(JJDLjava/lang/String;II)V");
 	CG_CACHE_METHOD(c_FileTransfer, m_OnFinished, "onFinished", "(Ljava/lang/String;I)V");
 	CG_CACHE_METHOD(c_FileTransfer, m_OnRecvMessage, "onRecvMessage", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
+	CG_CACHE_METHOD(c_FileTransfer, m_OnHeartAccept, "heartAccept", "(Ljava/lang/String;I)V");
 	
 	return true;
 }

@@ -29,7 +29,7 @@ CUdtCore *CUdtProxy::core() const
 
 //////////////////////////////////////////////////////////////////////////
 // Call Back
-void CUdtProxy::onAccept(const char* pstrAddr, const char* pstrFileName, int nFileCount, const char* recdevice, const char* rectype, const char* owndevice, const char* owntype, const char* SendType, int sock)
+void CUdtProxy::onAccept(const char* pstrAddr, const char* pstrFileName, int nFileCount, const char* recdevice, const char* rectype, const char* owndevice, const char* owntype, const char* SendType, const char* FileType, int sock)
 {
 	std::cout<< "Accept file name:" << pstrFileName << std::endl;
 
@@ -47,7 +47,7 @@ void CUdtProxy::onAccept(const char* pstrAddr, const char* pstrFileName, int nFi
 	}
 
 	m_sock = sock;
-	if (nFileCount == 1)
+	if (nFileCount == 1 && strcmp("D", FileType) != 0)
 	{
 		strcat(path, pstrFileName);
 		m_pUdt->ReplyAccept(sock, path);

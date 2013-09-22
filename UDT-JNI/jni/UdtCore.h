@@ -27,6 +27,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <vector>
+#include <map>
 #include <string.h>
 #include <fstream>
 #include <iostream>
@@ -41,11 +42,12 @@
 class CUDTCallBack
 {
 public:
-	virtual void onAccept(const char* pstrAddr, const char* pstrFileName, int nFileCount, const char* recdevice, const char* rectype, const char* owndevice, const char* owntype, const char* SendType, int sock) = 0;
+	virtual void onAccept(const char* pstrAddr, const char* pstrFileName, int nFileCount, const int64_t nFileSize, const char* recdevice, const char* rectype, const char* owndevice, const char* owntype, const char* SendType, const char* FileType, int sock) = 0;
 	virtual void onAcceptonFinish(const char* pstrAddr, const char* pFileName, int Type, int sock) = 0;
 	virtual void onFinished(const char * pstrMsg, int Type, int sock) = 0;
 	virtual void onTransfer(const int64_t nFileTotalSize, const int64_t nCurrent, const double iProgress, const char* pstrFileName, int Type, int sock) = 0;
 	virtual void onRecvMessage(const char* pstrMsg, const char* pIpAddr, const char* pHostName) = 0;
+	virtual void onTTSPing(const char* pstrIp, int Type) = 0;
 };
 
 class CUdtCore
@@ -57,6 +59,7 @@ public:
 	int StartListen(const int nCtrlPort, const int nFilePort);
 	int SendMsg(const char* pstrAddr, const char* pstrMsg, const char* pstrHostName);
 	int SendFiles(const char* pstrAddr, const std::vector<std::string> vecFiles, const char* owndevice, const char* owntype, const char* recdevice, const char* rectype, const char* pstrSendtype);
+	void TTSPing(const std::vector<std::string> vecIpAddress);
 	void ReplyAccept(const UDTSOCKET sock, const char* pstrReply);
 	void StopTransfer(const UDTSOCKET sock, const int nType);
 	void StopListen();
@@ -103,9 +106,8 @@ private:
 
 	void SearchFileInDirectroy(const std::string & szPath, int64_t & nTotalSize, std::vector<std::string> & vecDirName, std::vector<std::string> & vecFileName);
 	void CreateDirectroy(const std::string & szPath);
-	int InitListenSocket(const int nPort, UDTSOCKET & sockListen);
-	int CreateTCPSocket(SYSSOCKET & ssock, const char* pstrPort, bool rendezvous = false);
-	int CreateUDTSocket(UDTSOCKET & usock, const char* pstrPort, bool rendezvous = false);
+	int CreateTCPSocket(SYSSOCKET & ssock, const char* pstrPort, bool bBind = false, bool rendezvous = false);
+	int CreateUDTSocket(UDTSOCKET & usock, const char* pstrPort, bool bBind = false, bool rendezvous = false);
 	int TCP_Connect(SYSSOCKET& ssock, const char* pstrAddr, const char* pstrPort);
 	int UDT_Connect(UDTSOCKET & usock, const char* pstrAddr, const char* pstrPort);
 
@@ -114,6 +116,9 @@ private:
 
 	std::vector<LPCLIENTCONTEXT> VEC_CXT;
 	std::vector<LPSERVERCONTEXT> VEC_SXT;
+	std::vector<std::string> VEC_IP;
+
+	bool m_bTTSPing;
 
 	int m_eid;
 	UDTSOCKET m_sockListenCtrlCmd;
@@ -121,6 +126,7 @@ private:
 	int m_nCtrlPort;
 	int m_nFilePort;
 	std::string m_szReplyfilepath;
+	std::string m_szFileName;
 	bool m_bSendStatus;
 	bool m_bRecvStatus;
 	bool m_bListenStatus;
@@ -129,16 +135,19 @@ private:
 	pthread_mutex_t m_LockSnd;
 	pthread_mutex_t m_LockRcv;
 	pthread_mutex_t m_Lock;
+	pthread_mutex_t m_LockTTS;
 
 	pthread_cond_t m_CondLisCtrl;
 	pthread_cond_t m_CondLisFile;
 	pthread_cond_t m_CondSnd;
 	pthread_cond_t m_CondRcv;
+	pthread_cond_t m_CondTTS;
 
 	pthread_t m_hThrLisCtrl;
 	pthread_t m_hThrLisFile;
 	pthread_t m_hThrSnd;
 	pthread_t m_hThrRcv;
+	pthread_t m_hThrTTS;
 #ifndef WIN32
 	static void * _ListenRcvCtrlThread(void * pParam);
 	static void * _ListenRcvFileThread(void * pParam);
@@ -146,6 +155,7 @@ private:
 	static void * _RecvThread(void * pParam);
 	static void * _SendFiles(void * pParam);
 	static void * _RecvFiles(void * pParam);
+	static void * _WorkThreadProc(void * pParam);
 #else
 	static DWORD WINAPI _ListenRcvCtrlThread(LPVOID pParam);
 	static DWORD WINAPI _ListenRcvFileThread(LPVOID pParam);
@@ -153,6 +163,7 @@ private:
 	static DWORD WINAPI _RecvThread(LPVOID pParam);
 	static DWORD WINAPI _SendFiles(LPVOID pParam);
 	static DWORD WINAPI _RecvFiles(LPVOID pParam);
+	static DWORD WINAPI _WorkThreadProc(LPVOID pParam);
 #endif
 };
 

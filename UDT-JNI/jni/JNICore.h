@@ -19,11 +19,12 @@ public:
 
 protected:
 	// call back
-	virtual void onAccept(const char* pstrIpAddr, const char* pstrFileName, int nFileCount, const char* pstrRecdevice, const char* pstrRectype, const char* pstrOwndevice, const char* pstrOwntype, const char* pstrSendType, int sock);
+	virtual void onAccept(const char* pstrIpAddr, const char* pstrFileName, int nFileCount, const int64_t nFileSize, const char* pstrRecdevice, const char* pstrRectype, const char* pstrOwndevice, const char* pstrOwntype, const char* pstrSendType, const char* pstrFileType, int sock);
 	virtual void onAcceptonFinish(const char* pstrAddr, const char* pstrFileName, int Type, int sock);
 	virtual void onFinished(const char * pstrMsg, int Type, int sock);
 	virtual void onTransfer(const int64_t nFileTotalSize, const int64_t nCurrent, const double iProgress, const char* pstrFileName, int Type, int sock);
 	virtual void onRecvMessage(const char* pstrMsg, const char* pstrIpAddr, const char* pstrHostName);
+	virtual void onTTSPing(const char* pstrIp, int Type);
 
 private:
 	CUdtCore *m_core;

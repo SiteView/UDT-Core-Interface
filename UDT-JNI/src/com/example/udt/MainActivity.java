@@ -93,7 +93,8 @@ public class MainActivity extends Activity implements FileTransfer.Callback{
         bt8.setOnClickListener(new OnClickListener() {
         	@Override
         	public void onClick(View arg0) {
-        		mCore.StopTransfer(2);
+        		//mCore.StopTransfer(2);
+        		mCore.StopListen();
 			}});
         
     

@@ -58,7 +58,7 @@ public class FileTransfer {
 	 * @param sendtype     发送类型    GENIEMAP /GENIETURBO
 	 * @param sock       套接字索引
 	 */
-    public void onAccept(String host,String filename,int filecount,String recdevice,String rectype,String owndevice,String owntype,String sendtype,int sock)
+    public void onAccept(String host,String filename,int filecount, long fileSize, String recdevice,String rectype,String owndevice,String owntype,String sendtype, String fileType, int sock)
     {
     	System.out.println("------onAccept:" + host + ":" + filename);
 		//FileTransfer.this.hook_onAccept(host, DeviceName, SendType, filename, count);
@@ -145,6 +145,14 @@ public class FileTransfer {
 		//}
     }
     
+	/**
+	 * 已断线的IP
+	 * @param ip
+	 */
+	public void heartAccept(String ip, int Type){
+		
+	}
+    
     
 	/**
 	 *  保存底层库 new()出来的对象指针
@@ -216,6 +224,11 @@ public class FileTransfer {
      * @return
      */
 	private static native int replyAccept(long core, String strReply, int sock);
+	
+	/**
+	 * 2013-09-04  增加心跳  传送要测试的IP心跳
+	 */
+	private static native void heart(Object ips[]);
 
     
 	Callback mCallback = null;
