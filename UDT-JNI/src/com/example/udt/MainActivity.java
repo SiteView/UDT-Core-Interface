@@ -33,7 +33,7 @@ public class MainActivity extends Activity implements FileTransfer.Callback{
         Button bt7 = (Button) this.findViewById(R.id.Btn7);
         Button bt8 = (Button) this.findViewById(R.id.Btn8);
         Text_ip = (EditText) this.findViewById(R.id.text_ip);
-        Text_ip.setText("10.0.0.9");
+        Text_ip.setText("192.168.1.3");
         Text_msg = (EditText) this.findViewById(R.id.text_msg);
         Text_msg.setText("input message to send");
         Text_info = (TextView) this.findViewById(R.id.textview1);
@@ -52,7 +52,7 @@ public class MainActivity extends Activity implements FileTransfer.Callback{
         	public void onClick(View arg0) {
         		// 发送单个文件
                 strAddr = Text_ip.getText().toString();
-                mCore.SendFiles(strAddr, new Object[]{"//mnt//sdcard//NetgearGenie//1.jpg"}, "HTC G18", "ANDROID", "zhujianwen", "WIN7", "GENIETURBO");
+                mCore.SendFiles(strAddr, new Object[]{"//mnt//sdcard//NetgearGenie//01.jpg"}, "HTC G18", "ANDROID", "zhujianwen", "WIN7", "GENIETURBO");
 			}});
         
         bt3.setOnClickListener(new OnClickListener() {
@@ -60,7 +60,7 @@ public class MainActivity extends Activity implements FileTransfer.Callback{
         	public void onClick(View arg0) {
         		// 发送多个文件
         		strAddr = Text_ip.getText().toString();
-        		mCore.SendFiles(strAddr, new Object[]{"//mnt//sdcard//NetgearGenie//1.jpg", "//mnt//sdcard//NetgearGenie//2.jpg", "//mnt//sdcard//NetgearGenie//feiq.exe"}, "HTC G18", "ANDROID", "zhujianwen", "WIN7", "GENIETURBO");
+        		mCore.SendFiles(strAddr, new Object[]{"//mnt//sdcard//NetgearGenie//01.jpg", "//mnt//sdcard//NetgearGenie//02.jpg", "//mnt//sdcard//NetgearGenie//03.jpg"}, "HTC G18", "ANDROID", "zhujianwen", "WIN7", "GENIETURBO");
 			}});
         
         bt4.setOnClickListener(new OnClickListener() {
@@ -69,13 +69,13 @@ public class MainActivity extends Activity implements FileTransfer.Callback{
         		// 发送文件夹
         		strAddr = Text_ip.getText().toString();
    
-        		mCore.SendFiles(strAddr, new Object[]{"//mnt//sdcard//NetgearGenie//recv"}, "HTC G18", "ANDROID", "zhujianwen", "WIN7", "GENIETURBO");
+        		mCore.SendFiles(strAddr, new Object[]{"//mnt//sdcard//NetgearGenie//Download"}, "HTC G18", "ANDROID", "zhujianwen", "WIN7", "GENIETURBO");
 			}});
         
         bt5.setOnClickListener(new OnClickListener() {
         	@Override
         	public void onClick(View arg0) {
-        		mCore.ReplyAccept("/mnt/sdcard/NetgearGenie/recv");
+        		//mCore.ReplyAccept("/mnt/sdcard/NetgearGenie/recv");
 			}});
         
         bt6.setOnClickListener(new OnClickListener() {
@@ -93,7 +93,6 @@ public class MainActivity extends Activity implements FileTransfer.Callback{
         bt8.setOnClickListener(new OnClickListener() {
         	@Override
         	public void onClick(View arg0) {
-        		//mCore.StopTransfer(2);
         		mCore.StopListen();
 			}});
         
@@ -115,7 +114,7 @@ public class MainActivity extends Activity implements FileTransfer.Callback{
 	{
 //		String szTmp = "RecvTransfer:" + szFileName;
 //		Text_info.setText(szTmp);
-		szTmp = "Recv msg:" + szFileName;
+		szTmp = "onTransfer total size:" + nFileTotalSize + ", nCurrent:" + nCurrent;
 		handler.sendEmptyMessage(1);
 	}
 	

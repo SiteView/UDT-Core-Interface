@@ -29,7 +29,7 @@ CUdtCore *CUdtProxy::core() const
 
 //////////////////////////////////////////////////////////////////////////
 // Call Back
-void CUdtProxy::onAccept(const char* pstrAddr, const char* pstrFileName, int nFileCount, const char* recdevice, const char* rectype, const char* owndevice, const char* owntype, const char* SendType, const char* FileType, int sock)
+void CUdtProxy::onAccept(const char* pstrAddr, const char* pstrFileName, int nFileCount, const int64_t nFileSize, const char* recdevice, const char* rectype, const char* owndevice, const char* owntype, const char* SendType, const char* FileType, int sock)
 {
 	std::cout<< "Accept file name:" << pstrFileName << std::endl;
 
@@ -47,10 +47,14 @@ void CUdtProxy::onAccept(const char* pstrAddr, const char* pstrFileName, int nFi
 	}
 
 	m_sock = sock;
-	if (nFileCount == 1 && strcmp("D", FileType) != 0)
+	if (nFileCount == 1)
 	{
 		strcat(path, pstrFileName);
 		m_pUdt->ReplyAccept(sock, path);
+	}
+	else if (nFileCount == 2)
+	{
+		m_pUdt->ReplyAccept(sock, "REJECT");
 	}
 	else
 		m_pUdt->ReplyAccept(sock, path);
@@ -92,10 +96,5 @@ void CUdtProxy::onRecvMessage(const char* pstrMsg, const char* pIpAddr, const ch
 
 void CUdtProxy::onTTSPing(const char* pstrIp, int Type)
 {
-	if (Type == 1)
-	{
-		std::cout<< "Remove IP:" << pstrIp << std::endl;
-	}
-	else
-		std::cout<< "Add IP:" << pstrIp << std::endl;
+
 }

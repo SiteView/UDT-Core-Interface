@@ -29,10 +29,13 @@ CUdtCore::~CUdtCore()
 
 int CUdtCore::StartListen(const int nCtrlPort, const int nFilePort)
 {
+	UDT::startup();
+
 	if (m_bListenStatus)
 		return 0;
 
-	UDT::startup();
+	m_nCtrlPort = nCtrlPort;
+	m_nFilePort = nFilePort;
 
 	// Create listen Control thread function
 	LISTENSOCKET * pCtrl = new LISTENSOCKET;
@@ -42,22 +45,19 @@ int CUdtCore::StartListen(const int nCtrlPort, const int nFilePort)
 	pCtrl->Type = OP_RCV_CTRL;
 	pCtrl->pThis = this;
 
-	m_bListenStatus = true;
-
 #ifndef WIN32
 	pthread_mutex_init(&pCtrl->lock, NULL);
 	pthread_cond_init(&pCtrl->cond, NULL);
-	VEC_LISTEN.push_back(pCtrl);
 	pthread_create(&pCtrl->hHand, NULL, _ListenThreadProc, pCtrl);
 	pthread_detach(pCtrl->hHand);
 	sleep(1);
 #else
 	pCtrl->lock = CreateMutex(NULL, false, NULL);
 	pCtrl->cond = CreateEvent(NULL, false, false, NULL);
-	VEC_LISTEN.push_back(pCtrl);
 	pCtrl->hHand = CreateThread(NULL, 0, _ListenThreadProc, pCtrl, 0, NULL);
 	Sleep(1000);
 #endif
+	VEC_LISTEN.push_back(pCtrl);
 
 	// Create listen file thread function
 	LISTENSOCKET * pFile = new LISTENSOCKET;
@@ -70,15 +70,14 @@ int CUdtCore::StartListen(const int nCtrlPort, const int nFilePort)
 #ifndef WIN32
 	pthread_mutex_init(&pFile->lock, NULL);
 	pthread_cond_init(&pFile->cond, NULL);
-	VEC_LISTEN.push_back(pFile);
 	pthread_create(&pFile->hHand, NULL, _ListenThreadProc, pFile);
 	pthread_detach(pFile->hHand);
 #else
 	pFile->lock = CreateMutex(NULL, false, NULL);
 	pFile->cond = CreateEvent(NULL, false, false, NULL);
-	VEC_LISTEN.push_back(pFile);
 	pFile->hHand = CreateThread(NULL, 0, _ListenThreadProc, pFile, 0, NULL);
 #endif
+	VEC_LISTEN.push_back(pFile);
 
 	return 0;
 }
@@ -92,7 +91,7 @@ int CUdtCore::SendMsg(const char* pstrAddr, const char* pstrMsg, const char* pst
 	// create concurrent UDT sockets
 	UDTSOCKET client;
 	char strPort[32];
-	sprintf(strPort, "%d", 7777);
+	sprintf(strPort, "%d", m_nCtrlPort);
 	if (CreateUDTSocket(client, strPort) < 0)
 	{
 		m_pCallBack->onFinished("Create fail!", nReturnCode, client);
@@ -143,8 +142,8 @@ int CUdtCore::SendFiles(const char* pstrAddr, const std::vector<std::string> vec
 	UDTSOCKET client;
 	char strCtrlPort[32];
 	char strFilePort[32];
-	sprintf(strCtrlPort, "%d", 7777);
-	sprintf(strFilePort, "%d", 7778);
+	sprintf(strCtrlPort, "%d", m_nCtrlPort);
+	sprintf(strFilePort, "%d", m_nFilePort);
 
 	// connect to CtrlPort
 	if (CreateUDTSocket(client, strCtrlPort) < 0)
@@ -175,24 +174,13 @@ int CUdtCore::SendFiles(const char* pstrAddr, const std::vector<std::string> vec
 
 	pthread_t hHandle;
 #ifndef WIN32
-	//pthread_mutex_init(&pCtrl->lock, NULL);
-	//pthread_cond_init(&pCtrl->cond, NULL);
 	pthread_create(&hHandle, NULL,  _WorkThreadProc, pCtrl);
 	pthread_detach(hHandle);
 #else
-	//pCtrl->lock = CreateMutex(NULL, false, NULL);
-	//pCtrl->cond = CreateEvent(NULL, false, false, NULL);
 	hHandle = CreateThread(NULL, 0, _WorkThreadProc, pCtrl, 0, NULL);
 #endif
 
 	return client;
-}
-
-void CUdtCore::TTSPing(const std::vector<std::string> vecIpAddress)
-{
-	//CGuard::enterCS(m_LockTTS);
-	//VEC_IP = vecIpAddress;
-	//CGuard::leaveCS(m_LockTTS);
 }
 
 void CUdtCore::ReplyAccept(const UDTSOCKET sock, const char* pstrReply)
@@ -202,8 +190,6 @@ void CUdtCore::ReplyAccept(const UDTSOCKET sock, const char* pstrReply)
 	{
 		if ((*it)->sockAccept == sock)
 		{
-			(*it)->fileSavePath = pstrReply;
-
 			char Head[8];
 			memset(Head, 0, 8);
 			if (memcmp("REJECT", pstrReply, 6) == 0)
@@ -211,7 +197,10 @@ void CUdtCore::ReplyAccept(const UDTSOCKET sock, const char* pstrReply)
 			else if (memcmp("REJECTBUSY", pstrReply, 10) == 0 || strlen(pstrReply) <= 0)
 				memcpy(Head, "FRB", 3);
 			else
+			{
+				(*it)->fileSavePath = pstrReply;
 				memcpy(Head, "FRA", 3);
+			}
 
 			if (UDT::ERROR == UDT::send(sock, (char*)Head, 3, 0))
 				return ;
@@ -257,9 +246,9 @@ void CUdtCore::StopListen()
 	m_bListenStatus = false;
 	for (vector<PLISTENSOCKET>::iterator iter = VEC_LISTEN.begin(); iter != VEC_LISTEN.end(); iter++)
 	{
-		UDT::close((*iter)->sockListen);
 #ifndef WIN32
 		pthread_mutex_lock(&(*iter)->lock);
+		UDT::close((*iter)->sockListen);
 		pthread_cond_signal(&(*iter)->cond);
 		pthread_mutex_unlock(&(*iter)->lock);
 #else
@@ -547,7 +536,7 @@ void CUdtCore::CreateDirectroy(const std::string & szPath)
 }
 
 
-void CUdtCore::ProcessAccept(LISTENSOCKET * cxt, std::fstream & log)
+void CUdtCore::ProcessAccept(LISTENSOCKET * cxt)
 {
 	// create USTSOCKET
 	if (!cxt->bListen)
@@ -560,7 +549,7 @@ void CUdtCore::ProcessAccept(LISTENSOCKET * cxt, std::fstream & log)
 		// listen socket
 		UDT::listen(cxt->sockListen, 10);
 		cxt->bListen = true;
-		log << "Successful listening port: " << cxt->strServerPort << endl;
+		cout << "Successful listening port: " << cxt->strServerPort << endl;
 	}
 
 	// accept port
@@ -569,9 +558,8 @@ void CUdtCore::ProcessAccept(LISTENSOCKET * cxt, std::fstream & log)
 	int addrlen = sizeof(clientaddr);
 	if (UDT::INVALID_SOCK == (sockAccept = UDT::accept(cxt->sockListen, (sockaddr*)&clientaddr, &addrlen)))
 	{
-		log << "Fail accept port : " << cxt->strServerPort << ", ErrorMsg:" <<UDT::getlasterror().getErrorMessage() << endl;
+		cout << "Fail accept port : " << cxt->strServerPort << ", ErrorMsg:" <<UDT::getlasterror().getErrorMessage() << endl;
 		cxt->bListen = false;
-		UDT::close(cxt->sockListen);
 		return ;
 	}
 	// get client sockaddr info
@@ -581,8 +569,11 @@ void CUdtCore::ProcessAccept(LISTENSOCKET * cxt, std::fstream & log)
 	cout << "Accept port:" << cxt->strServerPort << ", New client connect:" << clienthost << ", Port:" << clientservice << endl;
 
 	CLIENTCONEXT * pData = new CLIENTCONEXT;
+	memset(pData, 0, sizeof(CLIENTCONEXT));
 	sprintf(pData->strClientAddr, "%s", clienthost);
 	sprintf(pData->strClientPort, "%s", clientservice);
+	//memcpy(pData->strClientAddr, clienthost, 32);
+	//memcpy(pData->strClientPort, clientservice, 32);
 	pData->sockAccept = sockAccept;
 	pData->pThis = cxt->pThis;
 	pData->Type = cxt->Type;
@@ -592,6 +583,7 @@ void CUdtCore::ProcessAccept(LISTENSOCKET * cxt, std::fstream & log)
 		if (strcmp(VEC_CLIENT[VEC_CLIENT.size()-1]->strClientAddr, pData->strClientAddr) == 0)
 		{
 			VEC_CLIENT[VEC_CLIENT.size()-1]->nCtrlFileGroup = pData->sockAccept;
+			pData->fileSavePath = VEC_CLIENT[VEC_CLIENT.size()-1]->fileSavePath;
 			pData->nCtrlFileGroup = pData->sockAccept;
 		}
 	}
@@ -1259,11 +1251,6 @@ DWORD WINAPI CUdtCore::_ListenThreadProc(LPVOID pParam)
 {
 	LISTENSOCKET * cxt = (LISTENSOCKET *)pParam;
 
-	string tmp = cxt->strServerPort;
-	std::string logName = "/mnt/sdcard/Udt" + tmp + ".txt";
-	fstream log(logName.c_str(), ios::out | ios::binary | ios::trunc);
-	log << "listen port:" << cxt->strServerPort << endl;
-
 	while (true)
 	{
 #ifndef WIN32
@@ -1290,24 +1277,17 @@ DWORD WINAPI CUdtCore::_ListenThreadProc(LPVOID pParam)
 #endif
 
 		// Process Accept, StopListen()，会改变m_bListenStatus的状态
-		//if (!cxt->pThis->m_bListenStatus)
-		//{
-		//	break;
-		//}
-
-		//if (cxt->pThis->m_bListenStatus)
-		//{
-			cxt->pThis->ProcessAccept(cxt, log);
-		//}
+		cxt->pThis->ProcessAccept(cxt);
+		if (!cxt->bListen)
+		{
+			break;
+		}
 	}
 
-	log << "Exit _ListenThreadProc port:" << cxt->strServerPort << endl;
+	cout << "Exit _ListenThreadProc port:" << cxt->strServerPort << endl;
 	UDT::close(cxt->sockListen);
-	log.close();
-
 	delete cxt;
 	cxt = NULL;
-
 #ifndef WIN32
 	return NULL;
 #else

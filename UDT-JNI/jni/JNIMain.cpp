@@ -58,6 +58,53 @@ JNIEXPORT jint  JNICALL Java_com_dragonflow_FileTransfer_stopListen(JNIEnv *env,
 	return 0;
 }
 
+JNIEXPORT jstring  JNICALL Java_com_dragonflow_FileTransfer_Test(JNIEnv *env, jclass clazz, jlong ptr)
+{
+	JNICore *core = reinterpret_cast<JNICore*>(ptr);
+	const char * str = "360ÊÖ»úÎÀÊÓ";
+	//const char * str = "360Mobile.png";
+	wchar_t *pwc = (wchar_t *)malloc(sizeof(wchar_t));
+
+	//jclass strClass = env->FindClass("Ljava/lang/String;");
+	//jmethodID ctorID = env->GetMethodID(strClass, "<init>", "([BLjava/lang/String;)V");
+	jbyteArray bytes = env->NewByteArray(strlen(str));
+	env->SetByteArrayRegion(bytes, 0, strlen(str), (jbyte*)str);
+	jstring encoding = env->NewStringUTF("utf-8");
+	return (jstring)env->NewObject(CG::c_String, CG::m_CtorID, bytes, encoding);
+	//return env->NewStringUTF(str);
+
+	//jstring rtn=0;
+	//unsigned short* buffer=0;
+	//int length = MultiByteToWideChar(CP_ACP, 0, (LPCSTR)str, slen, NULL, 0);
+	//buffer = (unsigned short*)malloc(length*2+1);
+	//if(MultiByteToWideChar(CP_ACP, 0, (LPCSTR)str, slen, (LPWSTR)buffer, length) > 0)
+	//{
+	//	rtn = env->NewString((jchar*)buffer, length);
+	//}
+	//if(buffer)
+	//{
+	//	free(buffer);
+	//}
+	//return rtn;
+	//int nLen = mbstowcs(pwc, str, (strlen(str)+1)*2);
+
+	//size_t len = wcslen(pwc);
+	//jchar* str2 = (jchar*)malloc(sizeof(jchar)*(len+1));
+	//int i;
+	//for (i = 0; i < len; i++)
+	//	str2[i] = pwc[i];
+	//str2[len] = 0;
+	//jstring js = env->NewString(str2, len);
+	//free(str2);
+	//free(pwc);
+	//return js;
+
+	//jstring title = env->NewString((jchar*)pwc, wcslen(pwc));
+
+	//return title;
+	//return env->NewStringUTF(mediaObj->title().GetChars());
+}
+
 
 JNIEXPORT jint  JNICALL Java_com_dragonflow_FileTransfer_replyAccept(JNIEnv *env, jclass clazz, jlong ptr, jstring szReply, jint sock)
 {
@@ -84,7 +131,7 @@ JNIEXPORT void  JNICALL Java_com_dragonflow_FileTransfer_heart(JNIEnv *env, jcla
 		env->ReleaseStringUTFChars(jsText, pText);
 		env->DeleteLocalRef(jsText);
 	}
-	core->core()->TTSPing(vecArray);
+	//core->core()->TTSPing(vecArray);
 }
 
 JNIEXPORT jint  JNICALL Java_com_dragonflow_FileTransfer_sendMessage(JNIEnv* env, jclass clazz, jlong ptr, jstring host, jstring message, jstring hostname)
@@ -140,8 +187,9 @@ JNIEXPORT jint  JNICALL Java_com_dragonflow_FileTransfer_sendFiles(JNIEnv* env, 
 JavaVM *CG::javaVM = 0;
 
 jclass CG::c_String = 0;
-
 jclass CG::c_FileTransfer = 0;
+
+jmethodID CG::m_CtorID = 0;
 jmethodID CG::m_OnAccept = 0;
 jmethodID CG::m_OnAcceptonFinish = 0;
 jmethodID CG::m_OnTransfer = 0;
@@ -168,6 +216,7 @@ bool CG::init(JavaVM *jvm)
 	CG_CACHE_CLASS(c_FileTransfer, "com/dragonflow/FileTransfer");
 
 	//CG_CACHE_METHOD(c_FileTransfer, m_OnDebug, "onDebug", "(Ljava/lang/String;)V");
+	CG_CACHE_METHOD(c_String, m_CtorID, "<init>", "([BLjava/lang/String;)V");
 	CG_CACHE_METHOD(c_FileTransfer, m_OnAccept, "onAccept", "(Ljava/lang/String;Ljava/lang/String;IJLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V");
 	CG_CACHE_METHOD(c_FileTransfer, m_OnAcceptonFinish, "onAcceptonFinish", "(Ljava/lang/String;Ljava/lang/String;II)V");
 	CG_CACHE_METHOD(c_FileTransfer, m_OnTransfer, "onTransfer", "(JJDLjava/lang/String;II)V");

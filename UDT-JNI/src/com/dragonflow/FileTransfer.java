@@ -30,7 +30,7 @@ public class FileTransfer {
 		sendMessage(mCore, address, message, hostname);
 	}
 	public void SendFiles(String host, Object[] filelist, String owndevice, String owntype, String recdevice, String rectype, String sendtype){
-		sendFiles(mCore, host, filelist, owndevice, owntype, recdevice, rectype, sendtype);
+		sock = sendFiles(mCore, host, filelist, owndevice, owntype, recdevice, rectype, sendtype);
 	}
 	public void ReplyAccept(String strReply)
 	{
@@ -38,11 +38,17 @@ public class FileTransfer {
 	}
 	public void StopTransfer(int nType)
 	{
-		stopTransfer(mCore, nType, 0);
+		stopTransfer(mCore, nType, sock);
 	}
 	public void StopListen()
 	{
 		stopListen(mCore);
+	}
+	
+	public void TestString()
+	{
+		String str = Test(mCore);
+		System.out.println("------onAccept:" + str);
 	}
 	
 	
@@ -61,6 +67,16 @@ public class FileTransfer {
     public void onAccept(String host,String filename,int filecount, long fileSize, String recdevice,String rectype,String owndevice,String owntype,String sendtype, String fileType, int sock)
     {
     	System.out.println("------onAccept:" + host + ":" + filename);
+    	if (filecount == 1 && fileType.equals("F"))
+    	{
+    		String filePath = "//mnt//sdcard//NetgearGenie//" + filename;
+    		replyAccept(mCore, filePath, sock);
+    	}
+    	else
+    	{
+    		String filePath = "//mnt//sdcard//NetgearGenie//";
+    		replyAccept(mCore, filePath, sock);
+    	}
 		//FileTransfer.this.hook_onAccept(host, DeviceName, SendType, filename, count);
     }
 	void hook_onAccept(String host, String DeviceName, String SendType, String filename, int count)
@@ -78,7 +94,7 @@ public class FileTransfer {
      */
     public void onAcceptonFinish(String host, String filename, int Type, int sock)
     {
-    	System.out.println("------onAccept:" + host + ":");
+    	System.out.println("------onAccept:" + host + ":" + filename);
     	//FileTransfer.this.hook_onAcceptonFinish(host, fileNameList);
     }
     void hook_onAcceptonFinish(String host, Object[] fileNameList)
@@ -116,14 +132,14 @@ public class FileTransfer {
     public void onTransfer(long sum, long current, double iProgress, String filename, int type , int sock)
     {
     	System.out.println("------onTransfer:" + sum + ":" + current);
-    	//FileTransfer.this.hook_onTransfer(sum, current, filename);
+    	FileTransfer.this.hook_onTransfer(sum, current, filename, type);
     }
-    void hook_onTransfer(long sum,long current,String filename)
+    void hook_onTransfer(long sum,long current,String filename, int type)
     {
-    	//if (mCallback != null)
-    	//{
-    	//	mCallback.onRecvTransfer(sum, current, filename);
-    	//}
+    	if (mCallback != null)
+    	{
+    		mCallback.onTransfer(sum, current, filename, type);
+    	}
     }
     
     
@@ -229,6 +245,7 @@ public class FileTransfer {
 	 * 2013-09-04  增加心跳  传送要测试的IP心跳
 	 */
 	private static native void heart(Object ips[]);
+	private static native String Test(long core);
 
     
 	Callback mCallback = null;
@@ -236,6 +253,7 @@ public class FileTransfer {
 	boolean mStarted = false;
 	Handler mDisp = new Handler();
 	long mCore = 0;
+	int sock = 0;
 	private String receiveFolder;
 	private String response;
 

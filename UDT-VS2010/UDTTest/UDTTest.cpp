@@ -13,11 +13,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	CUdtProxy * pUdt = CUdtProxy::GetInStance();
 
-	if (pUdt->core()->StartListen(7000, 7001) < 0)
-	{
-		printf("Listen fail!\n");
-		return 1;
-	}
+	pUdt->core()->StartListen(7777, 7778);
 
 	int sock;
 	char ip[32] = {0};
@@ -51,10 +47,12 @@ int _tmain(int argc, _TCHAR* argv[])
 		else if (strcmp(buf, "3") == 0)
 		{
 			pUdt->core()->StopTransfer(sock, 2);
+			//pUdt->core()->StartListen(7777, 7778);
 		}
 		else if (strcmp(buf, "4") == 0)
 		{
 			pUdt->core()->StopTransfer(sock, 1);
+			//pUdt->core()->StopListen();
 		}
 		else if (strcmp(buf, "5") == 0)
 		{

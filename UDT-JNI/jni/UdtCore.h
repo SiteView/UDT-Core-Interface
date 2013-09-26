@@ -58,7 +58,6 @@ public:
 	int StartListen(const int nCtrlPort, const int nFilePort);
 	int SendMsg(const char* pstrAddr, const char* pstrMsg, const char* pstrHostName);
 	int SendFiles(const char* pstrAddr, const std::vector<std::string> vecFiles, const char* owndevice, const char* owntype, const char* recdevice, const char* rectype, const char* pstrSendtype);
-	void TTSPing(const std::vector<std::string> vecIpAddress);
 	void ReplyAccept(const UDTSOCKET sock, const char* pstrReply);
 	void StopTransfer(const UDTSOCKET sock, const int nType);
 	void StopListen();
@@ -114,7 +113,7 @@ private:
 
 	void SearchFileInDirectroy(const std::string & szPath, int64_t & nTotalSize, std::vector<std::string> & vecDirName, std::vector<std::string> & vecFileName);
 	void CreateDirectroy(const std::string & szPath);
-	void ProcessAccept(LISTENSOCKET * cxt, std::fstream & log);
+	void ProcessAccept(LISTENSOCKET * cxt);
 	int ProcessSendCtrl(CLIENTCONEXT * cxt);
 	int ProcessSendFile(CLIENTCONEXT * cxt);
 	int ProcessRecvFile(CLIENTCONEXT * cxt);
