@@ -572,10 +572,8 @@ void CUdtCore::ProcessAccept(LISTENSOCKET * cxt)
 
 	CLIENTCONEXT * pData = new CLIENTCONEXT;
 	memset(pData, 0, sizeof(CLIENTCONEXT));
-	//sprintf(pData->strClientAddr, "%s", clienthost);
-	//sprintf(pData->strClientPort, "%s", clientservice);
-	memcpy(pData->strClientAddr, clienthost, 32);
-	memcpy(pData->strClientPort, clientservice, 32);
+	sprintf(pData->strClientAddr, "%s", clienthost);
+	sprintf(pData->strClientPort, "%s", clientservice);
 	pData->sockAccept = sockAccept;
 	pData->pThis = cxt->pThis;
 	pData->Type = cxt->Type;
@@ -716,7 +714,6 @@ int CUdtCore::ProcessSendCtrl(CLIENTCONEXT * cxt)
 		}
 		else if (memcmp(Head, "FSC", 3) == 0)
 		{
-			nReturnCode = 100;
 			return 100;
 		}
 		else if (memcmp(Head, "FRF", 3) == 0)
@@ -761,7 +758,7 @@ int CUdtCore::ProcessSendCtrl(CLIENTCONEXT * cxt)
 				}
 			}
 		}
-		else if (strlen(Head) >= 3)
+		else if (memcmp(Head, "MSP", 3) == 0)
 		{
 			memset(Head, 0, 8);
 			memcpy(Head, "FSV", 3);
@@ -1230,7 +1227,6 @@ int CUdtCore::ProcessRecvFile(CLIENTCONEXT * cxt)
 		}
 		else if (memcmp(Head,"MSF",3) == 0)
 		{
-			nReturnCode = 110;
 			return 110;
 		}
 		else if (memcmp(Head,"FSE",3) == 0)
