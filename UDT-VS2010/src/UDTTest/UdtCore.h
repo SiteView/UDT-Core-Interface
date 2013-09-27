@@ -75,8 +75,8 @@ private:
 	{
 		UDTSOCKET sockListen;
 		UDTSOCKET sockAccept;
-		char strServerPort[32];
-		char strServerAddr[32];
+		std::string strServerPort;
+		std::string strServerAddr;
 		bool bListen;
 		pthread_t hHand;
 		pthread_cond_t cond;
@@ -89,15 +89,15 @@ private:
 	{
 		UDTSOCKET sockListen;
 		UDTSOCKET sockAccept;
-		char strServerPort[32];
-		char strServerAddr[32];
-		char strClientPort[32];
-		char strClientAddr[32];
-		char ownDev[128];
-		char ownType[128];
-		char recvDev[128];
-		char recvType[128];
-		char sendType[128];
+		std::string strServerPort;
+		std::string strServerAddr;
+		std::string strClientPort;
+		std::string strClientAddr;
+		std::string ownDev;
+		std::string ownType;
+		std::string recvDev;
+		std::string recvType;
+		std::string sendType;
 		int64_t nFileTotalSize;
 		int64_t nRecvSize;
 		int nCtrlFileGroup;
