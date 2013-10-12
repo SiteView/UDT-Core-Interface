@@ -6,8 +6,6 @@
 	#include <sys/uio.h>
 	#include <arpa/inet.h>
 	#include <unistd.h>
-	#include <cstdlib>
-	#include <cstring>
 	#include <netdb.h>
 	#include <pthread.h>
 	#include <errno.h>
@@ -24,17 +22,14 @@
 #include <iostream>
 #include <sys/stat.h>
 #include <stdio.h>
-#include <cstdlib>
-#include <cstring>
 #include <vector>
 #include <string.h>
 #include <fstream>
-#include <iostream>
-#include <stdio.h>
 
 #include "udt.h"
 #include "cc.h"
 #include "common.h"
+#include "UdtFile.h"
 
 #define TO_SND 1024*100		// 文件发送数据块大小：((1(byte) * 1024)(kb) * 1024)(mb)
 
@@ -78,9 +73,6 @@ private:
 		std::string strServerPort;
 		std::string strServerAddr;
 		bool bListen;
-		pthread_t hHand;
-		pthread_cond_t cond;
-		pthread_mutex_t lock;
 		OP_TYPE Type;
 		CUdtCore * pThis;
 	}LISTENSOCKET, *PLISTENSOCKET;
@@ -102,17 +94,16 @@ private:
 		int64_t nRecvSize;
 		int nCtrlFileGroup;
 		int nFileCount;
+		bool bTransfer;
 		double iProgress;
 		std::string fileName;
 		std::string fileSavePath;
 		std::vector<std::string> vecFiles;
-		std::vector<std::string> vecFilePath;
+		std::vector<_FileInfo> fileInfo;
 		OP_TYPE Type;
 		CUdtCore * pThis;
 	}CLIENTCONEXT, *PCLIENTCONEXT;
 
-	void SearchFileInDirectroy(const std::string & szPath, int64_t & nTotalSize, std::vector<std::string> & vecDirName, std::vector<std::string> & vecFileName);
-	void CreateDirectroy(const std::string & szPath);
 	void ProcessAccept(LISTENSOCKET * cxt);
 	int ProcessSendCtrl(CLIENTCONEXT * cxt);
 	int ProcessSendFile(CLIENTCONEXT * cxt);

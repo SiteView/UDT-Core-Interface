@@ -47,14 +47,10 @@ void CUdtProxy::onAccept(const char* pstrAddr, const char* pstrFileName, int nFi
 	}
 
 	m_sock = sock;
-	if (nFileCount == 1)
+	if (nFileCount == 1 && strcmp("F", FileType) == 0)
 	{
 		strcat(path, pstrFileName);
 		m_pUdt->ReplyAccept(sock, path);
-	}
-	else if (nFileCount == 2)
-	{
-		m_pUdt->ReplyAccept(sock, "REJECT");
 	}
 	else
 		m_pUdt->ReplyAccept(sock, path);

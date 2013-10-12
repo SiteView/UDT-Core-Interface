@@ -69,7 +69,7 @@ public class MainActivity extends Activity implements FileTransfer.Callback{
         		// ·¢ËÍÎÄ¼þ¼Ð
         		strAddr = Text_ip.getText().toString();
    
-        		mCore.SendFiles(strAddr, new Object[]{"//mnt//sdcard//NetgearGenie//Download"}, "HTC G18", "ANDROID", "zhujianwen", "WIN7", "GENIETURBO");
+        		mCore.SendFiles(strAddr, new Object[]{"//mnt//sdcard//Download"}, "HTC G18", "ANDROID", "zhujianwen", "WIN7", "GENIETURBO");
 			}});
         
         bt5.setOnClickListener(new OnClickListener() {

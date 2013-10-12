@@ -75,12 +75,9 @@ private:
 	{
 		UDTSOCKET sockListen;
 		UDTSOCKET sockAccept;
-		char strServerPort[32];
-		char strServerAddr[32];
+		std::string strServerPort;
+		std::string strServerAddr;
 		bool bListen;
-		pthread_t hHand;
-		pthread_cond_t cond;
-		pthread_mutex_t lock;
 		OP_TYPE Type;
 		CUdtCore * pThis;
 	}LISTENSOCKET, *PLISTENSOCKET;
@@ -89,23 +86,25 @@ private:
 	{
 		UDTSOCKET sockListen;
 		UDTSOCKET sockAccept;
-		char strServerPort[32];
-		char strServerAddr[32];
-		char strClientPort[32];
-		char strClientAddr[32];
-		char ownDev[128];
-		char ownType[128];
-		char recvDev[128];
-		char recvType[128];
-		char sendType[128];
+		std::string strServerPort;
+		std::string strServerAddr;
+		std::string strClientPort;
+		std::string strClientAddr;
+		std::string ownDev;
+		std::string ownType;
+		std::string recvDev;
+		std::string recvType;
+		std::string sendType;
 		int64_t nFileTotalSize;
 		int64_t nRecvSize;
 		int nCtrlFileGroup;
 		int nFileCount;
+		bool bTransfer;
 		double iProgress;
 		std::string fileName;
 		std::string fileSavePath;
 		std::vector<std::string> vecFiles;
+		std::vector<std::string> vecFileDir;
 		std::vector<std::string> vecFilePath;
 		OP_TYPE Type;
 		CUdtCore * pThis;
@@ -131,6 +130,7 @@ private:
 	int m_nCtrlPort;
 	int m_nFilePort;
 	bool m_bListenStatus;
+	bool m_bTransfer;
 
 	pthread_mutex_t m_Lock;
 #ifndef WIN32
