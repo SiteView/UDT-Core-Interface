@@ -3,18 +3,17 @@
 
 #include "stdafx.h"
 #include <vector>
-#include "UDTProxy.h"
+#include "UdtProxy.h"
 
 int _tmain(int argc, _TCHAR* argv[])
 {
 	printf("\t/***********************************\n");
-	printf("\t 1 - 发送文本消息   2 - 发送单多文件\n\t 3 - 停止发送文件   4 - 停止接收文件\n\t 5 - 是否接收文件   0 - 退出\n");
+	printf("\t 1 - 开始监听端口   2 - 停止监听端口\n\t 3 - 发送文本消息   4 - 发送单多文件\n\t 5 - 确定接收文件   6 - 拒绝接收文件\n\t 7 - 停止发送文件   8 - 停止接收文件\n");
 	printf("\t ***********************************/\n");
 
 	CUdtProxy * pUdt = CUdtProxy::GetInStance();
 
-	pUdt->core()->StartListen(7777, 7778);
-
+	bool bStopListen = true;
 	int sock;
 	char ip[32] = {0};
 	char buf[256] = {0};
@@ -23,13 +22,23 @@ int _tmain(int argc, _TCHAR* argv[])
 	{
 		if (strcmp(buf, "1") == 0)
 		{
+			pUdt->core()->StartListen(7000, 7001);
+			bStopListen = false;
+		}
+		else if (strcmp(buf, "2") == 0)
+		{
+			pUdt->core()->StopListen();
+			bStopListen = true;
+		}
+		else if (strcmp(buf, "3") == 0)
+		{
 			printf("输入目标IP：");
 			gets_s(ip);
 			printf("输入消息内容 :");
 			gets_s(buf);
 			pUdt->core()->SendMsg(ip, buf, "zhujianwen");
 		}
-		else if (strcmp(buf, "2") == 0)
+		else if (strcmp(buf, "4") == 0)
 		{
 			printf("输入目标IP：");
 			gets_s(ip);
@@ -44,22 +53,34 @@ int _tmain(int argc, _TCHAR* argv[])
 			}
 			sock = pUdt->core()->SendFiles(ip, vecNames, "HTC G18", "ANDROID", "zhujianwen", "WIN7", "GENIETURBO");
 		}
-		else if (strcmp(buf, "3") == 0)
-		{
-			pUdt->core()->StopTransfer(sock, 2);
-			//pUdt->core()->StartListen(7777, 7778);
-		}
-		else if (strcmp(buf, "4") == 0)
-		{
-			pUdt->core()->StopTransfer(sock, 1);
-			//pUdt->core()->StopListen();
-		}
 		else if (strcmp(buf, "5") == 0)
 		{
-			printf("确定接收，输入文件存储路径:D:\\Genie\\；拒绝接收，输入:REJECT\n");
-			char filePath[256];
-			gets_s(filePath);
-			pUdt->core()->ReplyAccept(sock, filePath);
+			char path[MAX_PATH];
+#if WIN32
+			GetCurrentDirectoryA(MAX_PATH, path);
+#else
+			if (NULL == getcwd(path, MAX_PATH))
+				Error("Unable to get current path");
+#endif
+			if ('\\' != path[strlen(path)-1])
+			{
+				strcat(path, ("\\"));
+			}
+			pUdt->core()->ReplyAccept(pUdt->GetSockID(1), "D:\\Genie\\Recv\\");
+		}
+		else if (strcmp(buf, "6") == 0)
+		{
+			pUdt->core()->ReplyAccept(pUdt->GetSockID(1), "REJECT");
+		}
+		else if (strcmp(buf, "7") == 0)
+		{
+			// stop send file
+			pUdt->core()->StopTransfer(sock, 1);
+		}
+		else if (strcmp(buf, "8") == 0)
+		{
+			// stop recv file
+			pUdt->core()->StopTransfer(pUdt->GetSockID(1), 2);
 		}
 		else if (strcmp(buf, "0") == 0)
 		{
@@ -68,7 +89,11 @@ int _tmain(int argc, _TCHAR* argv[])
 		}
 	}
 
-	pUdt->core()->StopListen();
+	if (bStopListen)
+	{
+		pUdt->core()->StopListen();
+	}
+	
 	return 0;
 }
 

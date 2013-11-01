@@ -27,10 +27,10 @@
 #include <fstream>
 
 #include "udt.h"
-#include "cc.h"
 #include "common.h"
 #include "UdtFile.h"
 
+#define CMD_SIZE 512
 #define TO_SND 1024*100		// 文件发送数据块大小：((1(byte) * 1024)(kb) * 1024)(mb)
 
 class CUDTCallBack
@@ -99,6 +99,7 @@ private:
 		std::string fileName;
 		std::string fileSavePath;
 		std::vector<std::string> vecFiles;
+		std::vector<std::string> vecDirs;
 		std::vector<_FileInfo> fileInfo;
 		OP_TYPE Type;
 		CUdtCore * pThis;
@@ -107,6 +108,7 @@ private:
 	void ProcessAccept(LISTENSOCKET * cxt);
 	int ProcessSendCtrl(CLIENTCONEXT * cxt);
 	int ProcessSendFile(CLIENTCONEXT * cxt);
+	int ProcessRecvCtrl(CLIENTCONEXT * cxt);
 	int ProcessRecvFile(CLIENTCONEXT * cxt);
 	int InitListenSocket(const char* pstrPort, UDTSOCKET & sockListen);
 	int CreateTCPSocket(SYSSOCKET & ssock, const char* pstrPort, bool bBind = false, bool rendezvous = false);
@@ -118,10 +120,12 @@ private:
 	CUDTCallBack * m_pCallBack;
 	std::vector<PLISTENSOCKET> VEC_LISTEN;
 	std::vector<PCLIENTCONEXT> VEC_CLIENT;
-
+	std::string m_szFileSavePath;
+	UDTSOCKET m_sockListen;
 	int m_nCtrlPort;
 	int m_nFilePort;
 	bool m_bListenStatus;
+	bool m_bTransfer;
 
 	pthread_mutex_t m_Lock;
 #ifndef WIN32

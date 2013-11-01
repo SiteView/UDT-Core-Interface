@@ -10,6 +10,8 @@ public:
 	static CUdtProxy * GetInStance();
 	CUdtCore *core() const;
 
+	int GetSockID(const int nType);
+
 private:
 	CUdtProxy();
 	~CUdtProxy();

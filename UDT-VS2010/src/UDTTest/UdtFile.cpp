@@ -12,10 +12,8 @@ UdtFile::~UdtFile()
 }
 
 #ifdef WIN32
-int UdtFile::ListDir(const char * path, __int64 & nTotalSize, std::vector<_FileInfo>& vecEntries)
+int UdtFile::ListDir(const char * path, __int64 & nTotalSize, std::vector<_FileInfo>& vecEntries, std::vector<std::string>& vecDirs)
 {
-	WIN32_USE_CHAR_CONVERSION;
-
 	// check the arguments
 	if (path == NULL || path[0] == '\0')
 		return 1;
@@ -28,20 +26,22 @@ int UdtFile::ListDir(const char * path, __int64 & nTotalSize, std::vector<_FileI
 
 	// list the entries
 	WIN32_FIND_DATAW find_data;
-	HANDLE find_handle = FindFirstFileW(WIN32_A2W_U(szPath.c_str()), &find_data);
+	//HANDLE find_handle = FindFirstFileW(WIN32_A2W_U(szPath.c_str()), &find_data);
+	HANDLE find_handle = FindFirstFileW(WIN32_C2WC(szPath.c_str()), &find_data);
 	if (find_handle == INVALID_HANDLE_VALUE)
 	{
 		struct _stat64 stat_buffer;
 		char strAPath[MAX_PATH];
 		char strUPath[MAX_PATH];
 		sprintf_s(strAPath, "%s", path);
-		sprintf_s(strUPath, "%s", WIN32_W2A_U(WIN32_A2W_U(path)));
-		int nRet = _wstat64(WIN32_A2W_U(path), &stat_buffer);
+		sprintf_s(strUPath, "%s", WIN32_WC2C(WIN32_C2WC(path)));
+		int nRet = _wstat64(WIN32_C2WC(path), &stat_buffer);
 		if (nRet == 0)
 		{
 			if (S_ISDIR(stat_buffer.st_mode))
 			{
-				ListDir(strAPath, nTotalSize, vecEntries);
+				vecDirs.push_back(strAPath);
+				ListDir(strAPath, nTotalSize, vecEntries, vecDirs);
 			}
 			else
 			{
@@ -56,24 +56,26 @@ int UdtFile::ListDir(const char * path, __int64 & nTotalSize, std::vector<_FileI
 		return 1;
 	}
 
+	vecDirs.push_back(path);
+
 	do 
 	{
-		if (WIN32_W2A_U(find_data.cFileName) != NULL)
+		if (WIN32_WC2C(find_data.cFileName) != NULL)
 		{
-			if (strcmp(WIN32_W2A_U(find_data.cFileName), ".") == 0 || strcmp(WIN32_W2A_U(find_data.cFileName), "..") == 0)
+			if (strcmp(WIN32_WC2C(find_data.cFileName), ".") == 0 || strcmp(WIN32_WC2C(find_data.cFileName), "..") == 0)
 				continue;
 
 			struct _stat64 stat_buffer;
 			char strAPath[MAX_PATH];
 			char strUPath[MAX_PATH];
-			sprintf_s(strAPath, "%s\\%s", path, WIN32_W2A_A(find_data.cFileName));
-			sprintf_s(strUPath, "%s\\%s", path, WIN32_W2A_U(find_data.cFileName));
-			int nRet = _wstat64(WIN32_A2W_U(strUPath), &stat_buffer);
+			sprintf_s(strAPath, "%s\\%s", path, WIN32_WC2C(find_data.cFileName));
+			sprintf_s(strUPath, "%s\\%s", path, WIN32_WC2CU(find_data.cFileName));
+			int nRet = _wstat64(WIN32_C2WC(strUPath), &stat_buffer);
 			if (nRet == 0)
 			{
 				if (S_ISDIR(stat_buffer.st_mode))
 				{
-					ListDir(strAPath, nTotalSize, vecEntries);
+					ListDir(strAPath, nTotalSize, vecEntries, vecDirs);
 				}
 				else
 				{
@@ -96,7 +98,7 @@ int UdtFile::ListDir(const char * path, __int64 & nTotalSize, std::vector<_FileI
 }
 
 #else
-int UdtFile::ListDir(const char * path, __int64 & nTotalSize, std::vector<_FileInfo>& vecEntries)
+int UdtFile::ListDir(const char * path, __int64 & nTotalSize, std::vector<_FileInfo>& vecEntries, std::vector<std::string>& vecDirs)
 {
 	// check the arguments
 	if (path == NULL) return 1;
@@ -221,8 +223,7 @@ int UdtFile::CreateDir(const char* path)
 #ifdef WIN32
 				if (_access(szFolder.c_str(), 0))
 				{
-					WIN32_USE_CHAR_CONVERSION;
-					BOOL result = ::CreateDirectoryW(WIN32_A2W_U(szFolder.c_str()), NULL);
+					BOOL result = ::CreateDirectoryW(WIN32_C2WC(szFolder.c_str()), NULL);
 					if (result == 0)
 						return 1;
 					//_mkdir(szFolder.c_str());
@@ -253,8 +254,7 @@ int UdtFile::GetInfo(const char* path, _FileInfo & info)
 	struct _stat64 stat_buffer;
 
 #ifdef WIN32
-	WIN32_USE_CHAR_CONVERSION;
-	nRet = _wstat64(WIN32_A2W_U(path), &stat_buffer);
+	nRet = _wstat64(WIN32_C2WC(path), &stat_buffer);
 #else
 	nRet = _stat64(path, stat_buffer);
 #endif
