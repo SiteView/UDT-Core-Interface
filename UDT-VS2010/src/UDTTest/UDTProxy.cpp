@@ -40,7 +40,7 @@ void CUdtProxy::onAccept(const char* pstrAddr, const char* pstrFileName, int nFi
 	m_sock = sock;
 }
 
-void CUdtProxy::onAcceptonFinish(const char* pstrAddr, const char* pFileName, int Type, int sock)
+void CUdtProxy::onAcceptonFinish(const char* pstrAddr, const char* pFileName, const int64_t nFileSize, int Type, int sock)
 {
 	if (Type == 1)
 		std::cout<< "Recv onAcceptonFinish file name:" << pFileName << std::endl;

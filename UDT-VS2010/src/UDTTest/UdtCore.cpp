@@ -33,9 +33,6 @@ int CUdtCore::StartListen(const int nCtrlPort, const int nFilePort)
 	if (m_bListenStatus)
 		return 0;
 
-	if (!VEC_LISTEN.empty())
-		VEC_LISTEN.clear();
-
 	m_bListenStatus = true;
 	m_nCtrlPort = nCtrlPort;
 	m_nFilePort = nFilePort;
@@ -49,31 +46,13 @@ int CUdtCore::StartListen(const int nCtrlPort, const int nFilePort)
 	pCtrl->bListen = false;
 	pCtrl->Type = OP_RCV_CTRL;
 	pCtrl->pThis = this;
-	VEC_LISTEN.push_back(pCtrl);
 #ifndef WIN32
 	pthread_t hCHandle;
 	pthread_create(&hCHandle, NULL, _ListenThreadProc, pCtrl);
-	pthread_detach(hCHand);
+	pthread_detach(hCHandle);
 #else
 	HANDLE hCHand = CreateThread(NULL, 0, _ListenThreadProc, pCtrl, 0, NULL);
 #endif
-
-	/* Create listen file thread function
-	LISTENSOCKET * pFile = new LISTENSOCKET();
-	memset(strPort, 0, 32);
-	sprintf(strPort, "%d", nFilePort);
-	pFile->strServerPort = strPort;
-	pFile->bListen = false;
-	pFile->Type = OP_RCV_FILE;
-	pFile->pThis = this;
-	VEC_LISTEN.push_back(pFile);
-#ifndef WIN32
-	pthread_t hFHandle;
-	pthread_create(&hFHand, NULL, _ListenThreadProc, pFile);
-	pthread_detach(hFHand);
-#else
-	HANDLE hFHand = CreateThread(NULL, 0, _ListenThreadProc, pFile, 0, NULL);
-#endif*/
 
 	return 0;
 }
@@ -197,11 +176,9 @@ int CUdtCore::SendFiles(const char* pstrAddr, const std::vector<std::string> vec
 	pCtrl->nFileTotalSize = nFileTotalSize;
 	pCtrl->nFileCount = vecFiles.size();
 	pCtrl->sockAccept = client;
-	pCtrl->nCtrlFileGroup = client;
 	pCtrl->bTransfer = false;
 	pCtrl->pThis = this;
 	pCtrl->Type = OP_SND_CTRL;
-	VEC_CLIENT.push_back(pCtrl);
 #ifndef WIN32
 	pthread_t hHandle;
 	pthread_create(&hHandle, NULL,  _WorkThreadProc, pCtrl);
@@ -216,30 +193,36 @@ int CUdtCore::SendFiles(const char* pstrAddr, const std::vector<std::string> vec
 
 void CUdtCore::ReplyAccept(const UDTSOCKET sock, const char* pstrReply)
 {
-	int nRetuenCode = 0;
+	char cmd[CMD_SIZE];
 	if (memcmp("REJECTBUSY", pstrReply, 10) == 0 || strlen(pstrReply) <= 0)
 	{
-		nRetuenCode = 202;
+		memset(cmd, 0, CMD_SIZE);
+		sprintf(cmd, "202 %s", "device reject busy");
+		m_pCallBack->onFinished("device reject busy", 113, sock);
 	}
 	else if (memcmp("REJECT", pstrReply, 6) == 0)
 	{
-		nRetuenCode = 202;
+		memset(cmd, 0, CMD_SIZE);
+		sprintf(cmd, "202 %s", "device reject");
+		m_pCallBack->onFinished("device reject", 102, sock);
 	}
 	else
 	{
 		m_szFileSavePath = pstrReply;
-		nRetuenCode = 200;
+		memset(cmd, 0, CMD_SIZE);
+		sprintf(cmd, "200 %s", "accept receive file");
 	}
 
-	if (UDT::ERROR == UDT::send(sock, (char*)&nRetuenCode, sizeof(nRetuenCode), 0))
+	if (UDT::ERROR == UDT::send(sock, cmd, CMD_SIZE, 0))
 		return ;
 }
 
 void CUdtCore::StopTransfer(const UDTSOCKET sock, const int nType)
 {
+	char cmd[CMD_SIZE];
 	if (nType == 1)
 	{
-		char cmd[CMD_SIZE];
+		// stop send file
 		memset(cmd, 0, CMD_SIZE);
 		sprintf(cmd, "%s", "ABOR");
 		if (UDT::ERROR == UDT::send(sock, (char*)cmd, CMD_SIZE, 0))
@@ -250,18 +233,17 @@ void CUdtCore::StopTransfer(const UDTSOCKET sock, const int nType)
 	}
 	else
 	{
-		int nRetuenCode = 226;
-		if (UDT::ERROR == UDT::send(sock, (char*)&nRetuenCode, sizeof(nRetuenCode), 0))
+		// stop recv file
+		memset(cmd, 0, CMD_SIZE);
+		sprintf(cmd, "350 %s", "stop receive file");
+		if (UDT::ERROR == UDT::send(sock, cmd, CMD_SIZE, 0))
 			return ;
 	}
 }
 
 void CUdtCore::StopListen()
 {
-	for (vector<PLISTENSOCKET>::iterator iter = VEC_LISTEN.begin(); iter != VEC_LISTEN.end(); iter++)
-	{
-		UDT::close((*iter)->sockListen);
-	}
+	UDT::close(m_sockListen);
 }
 
 
@@ -426,14 +408,6 @@ void CUdtCore::ProcessAccept(LISTENSOCKET * cxt)
 	pData->sockAccept = sockAccept;
 	pData->pThis = cxt->pThis;
 	pData->Type = cxt->Type;
-	// control port push to VEC_CLIENT
-	if (cxt->Type == OP_RCV_CTRL)
-	{
-		CGuard::enterCS(m_Lock);
-		VEC_CLIENT.push_back(pData);
-		CGuard::leaveCS(m_Lock);
-	}
-
 #ifndef WIN32
 	pthread_t hHandle;
 	pthread_create(&hHandle, NULL, _WorkThreadProc, pData);
@@ -449,289 +423,215 @@ int CUdtCore::ProcessSendCtrl(CLIENTCONEXT * cxt)
 	char cmd[CMD_SIZE];
 	int nReturnCode = 108, nLen = 0, nPos = 0, nFileCount = 0;
 	int64_t nFileTotalSize = 0, nSendSize = 0, nLastSendSize = 0;
-	string szTmp, szFolderName, szFileName, szFilePath, szFinish = "NETFAIL", szError = "";
-	UDTSOCKET client = cxt->sockAccept;
+	string szTmp, szPercent, szFolderName, szFileName, szFilePath, szFinish = "NETFAIL", szError = "";
 	nFileCount = cxt->nFileCount;
 	nFileTotalSize = cxt->nFileTotalSize;
 	szFilePath = cxt->vecFiles[0];
 
-	for (int i = 0; i < 3; i++)
+	// connect to data port
+	while (true)
 	{
 		if (UDT_Connect(cxt->sockAccept, cxt->strServerAddr.c_str(), cxt->strServerPort.c_str()) < 0)
 		{
-			i++;
+			const char * error = UDT::getlasterror_desc();
+			m_pCallBack->onFinished(error,119, cxt->sockAccept);
+			nLen++;
+#ifdef WIN32
 			Sleep(1000);
+#else
+			sleep(1);
+#endif
 		}
-		break;
+		else
+			break;
+		if (nLen >= 3)
+		{
+			m_pCallBack->onFinished("Connect fail", 119, cxt->sockAccept);
+			return -1;
+		}
 	}
-
-	// send file name,(filename\hostname\sendtype)
-	nPos = szFilePath.find_last_of('/');
-	if (nPos < 0)
-	{
-		nPos = szFilePath.find_last_of("\\");
-	}
-	szFileName = szFilePath.substr(nPos+1);
-	szTmp = szFileName + "\\" + cxt->ownDev + "\\" + cxt->ownType + "\\" + cxt->recvDev + "\\" + cxt->recvType + "\\" + cxt->sendType;
-	if (cxt->vecFiles.size() < cxt->fileInfo.size())
-		szTmp = szTmp + "\\D\\";
-	else
-		szTmp = szTmp + "\\F\\";
-	//#ifdef WIN32
-	//	szTmp = WIN32_WC2CU(WIN32_C2WC(szTmp.c_str()));
-	//#endif
-
-	// send login user name
-	memset(cmd, 0, CMD_SIZE);
-	sprintf(cmd, "USER %s", szTmp.c_str());
-	if (UDT::ERROR == UDT::send(client, (char*)cmd, CMD_SIZE, 0))
-		return 108;
-
-	for (vector<string>::iterator iter = cxt->vecDirs.begin(); iter != cxt->vecDirs.end(); iter++)
-	{
-		memset(cmd, 0, CMD_SIZE);
-		sprintf(cmd, "NLST %s", (*iter).c_str());
-		if (UDT::ERROR == UDT::send(client, (char*)cmd, CMD_SIZE, 0))
-			return 108;
-	}
-
-	for (vector<_FileInfo>::iterator iter = cxt->fileInfo.begin(); iter != cxt->fileInfo.end(); iter++)
-	{
-		memset(cmd, 0, CMD_SIZE);
-		sprintf(cmd, "LIST %s", (*iter).asciPath.c_str());
-		if (UDT::ERROR == UDT::send(client, (char*)cmd, CMD_SIZE, 0))
-			return 108;
-	}
-
-	// send file total size
-	memset(cmd, 0, CMD_SIZE);
-	sprintf(cmd, "%s%d", "ALLO ", cxt->nFileTotalSize);
-	if (UDT::ERROR == UDT::send(client, (char*)cmd, CMD_SIZE, 0))
-		return 108;
-
-	// send login user name
-	memset(cmd, 0, CMD_SIZE);
-	sprintf(cmd, "%s", "PASV");
-	if (UDT::ERROR == UDT::send(client, (char*)cmd, CMD_SIZE, 0))
-		return 108;
+	UDTSOCKET sockCtrl = cxt->sockAccept;
+	// get sockaddr info
+	struct sockaddr_in addr_c;
+	nLen = sizeof(addr_c);
+	UDT::getsockname(sockCtrl, (sockaddr*)&addr_c, &nLen);
+	char clientHost[NI_MAXHOST];
+	char clientService[NI_MAXSERV];
+	sprintf(clientHost, "%s", inet_ntoa(addr_c.sin_addr));
+	sprintf(clientService, "%d", addr_c.sin_port);
 
 	while (true)
 	{
-		if (UDT::ERROR == UDT::recv(client, (char*)&nReturnCode, sizeof(nReturnCode), 0))
-			return 108;
-		if (nReturnCode == 120)
+		memset(cmd, 0, CMD_SIZE);
+		if (UDT::ERROR == UDT::recv(sockCtrl, cmd, CMD_SIZE, 0))
 		{
+			const char * error = UDT::getlasterror_desc();
+			m_pCallBack->onFinished(error, 108, sockCtrl);
+			break;
+		}
+		if (memcmp(cmd, "120", 3) == 0)
+		{
+			// 服务器准备就绪的时间分钟数
+		}
+		else if (memcmp(cmd, "125", 3) == 0)
+		{
+			// 打开数据连接开始传输
+		}
+		else if (memcmp(cmd, "150", 3) == 0)
+		{
+			// 打开连接
+		}
+		else if (memcmp(cmd, "200", 3) == 0)
+		{
+			// 成功
 			memset(cmd, 0, CMD_SIZE);
-			sprintf(cmd, "%s", "NOOP");
-			if (UDT::ERROR == UDT::send(client, (char*)cmd, CMD_SIZE, 0))
+			sprintf(cmd, "%s%s%s%s", "PORT ", clientHost, ",7000,", clientService);
+			if (UDT::ERROR == UDT::send(sockCtrl, (char*)cmd, CMD_SIZE, 0))
+				return 108;
+			//szTmp = cmd;
+			//cxt->uuid = szTmp.substr(5);
+			//VEC_CLIENT.push_back(cxt);
+		}
+		else if (memcmp(cmd, "202", 3) == 0)
+		{
+			// 命令没有执行
+			szTmp = cmd;
+			szTmp = szTmp.substr(4);
+			// send quit
+			memset(cmd, 0, CMD_SIZE);
+			sprintf(cmd, "%s", "QUIT");
+			if (UDT::ERROR == UDT::send(sockCtrl, (char*)cmd, CMD_SIZE, 0))
+				return 108;
+
+			if (szTmp == "device reject")
+				return 103;
+			else if (szTmp == "device reject busy")
+				return 114;
+			else
+				return 0;
+		}
+		else if (memcmp(cmd, "214", 3) == 0)
+		{
+			szTmp = cmd;
+			string szCmd = szTmp.substr(4);
+			nPos = szCmd.find_first_of(" ");
+			szTmp = szCmd.substr(0, nPos);
+			nSendSize = atoi(szTmp.c_str());
+			szCmd = szCmd.substr(nPos+1);
+			nPos = szCmd.find_first_of(" ");
+			szTmp = szCmd.substr(0, nPos);
+			double dRate = atoi(szTmp.c_str()) / 100.0;
+			szTmp = szCmd.substr(nPos+1);
+			m_pCallBack->onTransfer(nFileTotalSize, nSendSize, dRate, szTmp.c_str(), 2, sockCtrl);
+		}
+		else if (memcmp(cmd, "220", 3) == 0)
+		{
+			// 服务就绪 
+			// send login user name
+			memset(cmd, 0, CMD_SIZE);
+			sprintf(cmd, "USER %s", "SiteView");
+			if (UDT::ERROR == UDT::send(sockCtrl, (char*)cmd, CMD_SIZE, 0))
 				return 108;
 		}
-		else if (nReturnCode == 0)
+		else if (memcmp(cmd, "221", 3) == 0)
 		{
-			//memset(Head, 0, 8);
-			//memcpy(Head, "FRR", 3);
-			//if (UDT::ERROR == UDT::send(client, (char*)Head, 3, 0))
-			//	return 108;
-			return 103;
+			// 退出网络 
 		}
-		else if (nReturnCode == 226)
+		else if (memcmp(cmd, "225", 3) == 0)
 		{
+			// 打开数据连接
+		}
+		else if (memcmp(cmd, "226", 3) == 0)
+		{
+			// 结束数据连接
+			memset(cmd, 0, CMD_SIZE);
+			sprintf(cmd, "%s", "QUIT");
+			if (UDT::ERROR == UDT::send(sockCtrl, (char*)cmd, CMD_SIZE, 0))
+				return 108;
+			return 109;
+		}
+		else if (memcmp(cmd, "227", 3) == 0)
+		{
+			// 进入被动模式
+		}
+		else if (memcmp(cmd, "230", 3) == 0)
+		{
+			// user logged in, proceed
+			// send directory
+			for (vector<string>::iterator iter = cxt->vecDirs.begin(); iter != cxt->vecDirs.end(); iter++)
+			{
+				memset(cmd, 0, CMD_SIZE);
+				sprintf(cmd, "NLST %s", (*iter).c_str());
+				if (UDT::ERROR == UDT::send(sockCtrl, (char*)cmd, CMD_SIZE, 0))
+					return 108;
+			}
+			// send file path name
+			for (vector<_FileInfo>::iterator iter = cxt->fileInfo.begin(); iter != cxt->fileInfo.end(); iter++)
+			{
+				memset(cmd, 0, CMD_SIZE);
+				sprintf(cmd, "LIST %s", (*iter).asciPath.c_str());
+				if (UDT::ERROR == UDT::send(sockCtrl, (char*)cmd, CMD_SIZE, 0))
+					return 108;
+			}
+			// send file total size
+			memset(cmd, 0, CMD_SIZE);
+			sprintf(cmd, "%s%d", "ALLO ", cxt->nFileTotalSize);
+			if (UDT::ERROR == UDT::send(sockCtrl, (char*)cmd, CMD_SIZE, 0))
+				return 108;
+			// send file name,(filename\hostname\sendtype)
+			nPos = szFilePath.find_last_of('/');
+			if (nPos < 0)
+			{
+				nPos = szFilePath.find_last_of("\\");
+			}
+			szFileName = szFilePath.substr(nPos+1);
+			szTmp = szFileName + "\\" + cxt->ownDev + "\\" + cxt->ownType + "\\" + cxt->recvDev + "\\" + cxt->recvType + "\\" + cxt->sendType;
+			if (cxt->vecFiles.size() < cxt->fileInfo.size())
+				szTmp = szTmp + "\\D\\";
+			else
+				szTmp = szTmp + "\\F\\";
+			//#ifdef WIN32
+			//	szTmp = WIN32_WC2CU(WIN32_C2WC(szTmp.c_str()));
+			//#endif
+			memset(cmd, 0, CMD_SIZE);
+			sprintf(cmd, "%s%s", "SITE ", szTmp.c_str());
+			if (UDT::ERROR == UDT::send(sockCtrl, cmd, CMD_SIZE, 0))
+				return 108;
+		}
+		else if (memcmp(cmd, "421", 3) == 0)
+		{
+			// 服务关闭
+		}
+		else if (memcmp(cmd, "350", 3) == 0)
+		{
+			// 文件行为暂停
 			memset(cmd, 0, CMD_SIZE);
 			sprintf(cmd, "%s", "ABOR");
-			if (UDT::ERROR == UDT::send(client, (char*)cmd, CMD_SIZE, 0))
+			if (UDT::ERROR == UDT::send(sockCtrl, (char*)cmd, CMD_SIZE, 0))
 				return 108;
 
 			CGuard::enterCS(m_Lock);
 			m_bTransfer = false;
 			CGuard::leaveCS(m_Lock);
-			//memset(Head, 0, 8);
-			//memcpy(Head, "FRC", 3);
-			//if (UDT::ERROR == UDT::send(client, (char*)Head, 3, 0))
-			//	return 108;
 		}
-		else if (nReturnCode == 0)
-		{
-			//memset(Head, 0, 8);
-			//memcpy(Head, "FRB", 3);
-			//if (UDT::ERROR == UDT::send(client, (char*)Head, 3, 0))
-			//	return 108;
-			return 114;
-		}
-		else if (nReturnCode == 426)
+		else if (memcmp(cmd, "426", 3) == 0)
 		{
 			// send quit
 			memset(cmd, 0, CMD_SIZE);
 			sprintf(cmd, "%s", "QUIT");
-			if (UDT::ERROR == UDT::send(client, (char*)cmd, CMD_SIZE, 0))
+			if (UDT::ERROR == UDT::send(sockCtrl, (char*)cmd, CMD_SIZE, 0))
 				return 108;
-			return 100;
-		}
-		else if (nReturnCode == 0)
-		{
-			//memset(Head, 0, 8);
-			//memcpy(Head, "FSF", 3);
-			//if (UDT::ERROR == UDT::send(client, (char*)Head, 3, 0))
-			//	return 108;
-			return 109;
-		}
-		else if (nReturnCode == 0)
-		{
-			//memset(Head, 0, 8);
-			//memcpy(Head, "FRE", 3);
-			//if (UDT::ERROR == UDT::send(client, (char*)Head, 3, 0))
-			//	return 108;
 			return 107;
 		}
-		else if (nReturnCode >= TO_SND)
+		else if (memcmp(cmd, "800", 3) == 0)
 		{
-			m_pCallBack->onTransfer(nFileTotalSize, nReturnCode, 0.0, szFilePath.c_str(), 2, client);
-		}
-		else if (nReturnCode == 805)
-		{
-			if (UDT::ERROR == UDT::recv(client, (char*)&nSendSize, sizeof(nSendSize), 0))
-				return 108;
-			if (UDT::ERROR == UDT::recv(client, (char*)&nLen, sizeof(nLen), 0))
-				return 108;
-			double dRate = nLen / 100.0;
-			m_pCallBack->onTransfer(nFileTotalSize, nSendSize, dRate, szFilePath.c_str(), 2, client);
-		}
-		else if (nReturnCode == 202)
-		{
-			// send quit
-			memset(cmd, 0, CMD_SIZE);
-			sprintf(cmd, "%s", "QUIT");
-			if (UDT::ERROR == UDT::send(client, (char*)cmd, CMD_SIZE, 0))
-				return 108;
-			return 100;
-		}
-		else if (nReturnCode == 0)
-		{
-			return 111;
+			return 112;
 		}
 	}
 
 	return 0;
 }
 
-
-int CUdtCore::ProcessSendFile(CLIENTCONEXT * cxt)
-{
-	char cmd[CMD_SIZE];
-	int nReturnCode = 108, nLen = 0, nRet = 0, nPos = 0, nCount = 0;
-	int64_t nFileSize = 0, nFileTotalSize = 0, nSendSize = 0, iLastPercent = 0; 
-	string szTmp, szTmp2, strReplyPath = "", szFinish = "NETFAIL", szSlash = "", szFilePath = "", szReFileName = "", szFolder = "";
-	string szHostName, szFileName, szRecdevice, szRectype, szOwndevice, szOwntype, szSendType, szFileType;
-	std::vector<std::string> vecFileName;
-	UDTSOCKET sock = cxt->sockAccept;
-
-	while (true)
-	{
-		memset(cmd, 0, CMD_SIZE);
-		if (UDT::ERROR == UDT::recv(sock, (char *)cmd, CMD_SIZE, 0))
-			return 108;
-		if (memcmp(cmd,"TSR", 3) == 0)	// 1.	recv message response（TSR）
-		{
-			// recv hostname
-			if (UDT::ERROR == UDT::recv(sock, (char*)&nLen, sizeof(nLen), 0))
-				return 108;
-			char * pstrHostName = new char[nLen+2];
-			if (UDT::ERROR == UDT::recv(sock, pstrHostName, nLen, 0))
-				return 108;
-			pstrHostName[nLen] = '\0';
-
-			// recv message
-			if (UDT::ERROR == UDT::recv(sock, (char*)&nLen, sizeof(nLen), 0))
-				return 108;
-			char * pstrMsg = new char[nLen+2];
-			if (UDT::ERROR == UDT::recv(sock, pstrMsg, nLen, 0))
-				return 108;
-			pstrMsg[nLen] = '\0';
-#ifdef WIN32
-			szTmp = WIN32_WC2C(WIN32_CU2WC(pstrMsg));
-#else
-			szTmp = pstrMsg;
-#endif
-
-			// notify to up
-			m_pCallBack->onRecvMessage(szTmp.c_str(), cxt->strClientAddr.c_str(), pstrHostName);
-			return 0;
-		}
-		else if (memcmp(cmd, "USER", 4) == 0)
-		{
-			CGuard::enterCS(m_Lock);
-			m_bTransfer = true;
-			CGuard::leaveCS(m_Lock);
-		}
-		else if (memcmp(cmd, "RETR", 4) == 0)
-		{
-			szTmp = cmd;
-			nPos = szTmp.find_first_of(" ");
-			if (nPos >= 0)
-			{
-				szFilePath = szTmp.substr(nPos+1);
-			}
-			// open the file
-			try
-			{
-				_FileInfo info;
-				UdtFile::GetInfo(szFilePath.c_str(), info);
-				nFileSize = info.nFileSize;
-
-				if (UDT::ERROR == UDT::send(sock, (char*)&nFileSize, sizeof(nFileSize), 0))
-					return 108;
-
-				fstream ifs(szFilePath.c_str(), ios::in | ios::binary);
-				int64_t nOffset = 0, left = nFileSize;
-
-				while (left > 0)
-				{
-					CGuard::enterCS(m_Lock);
-					if (!m_bTransfer)
-					{
-						CGuard::leaveCS(m_Lock);
-						break;
-					}
-					CGuard::leaveCS(m_Lock);
-
-					UDT::TRACEINFO trace;
-					UDT::perfmon(sock, &trace);
-
-					int64_t send = 0;
-					if (left > TO_SND)
-						send = UDT::sendfile(sock, ifs, nOffset, TO_SND);
-					else
-						send = UDT::sendfile(sock, ifs, nOffset, left);
-
-					if (UDT::ERROR == send)
-						return 108;
-
-					left -= send;
-					nSendSize += send;
-
-					CGuard::enterCS(m_Lock);
-					cxt->iProgress = trace.mbpsSendRate / 8;
-					CGuard::leaveCS(m_Lock);
-				}
-				ifs.close();
-				m_pCallBack->onAcceptonFinish(cxt->strClientAddr.c_str(), szFileName.c_str(), 2, sock);
-			}
-			catch (...)
-			{
-				return 108;
-			}
-		}
-		else if (memcmp(cmd, "MKD ", 4) == 0)
-		{
-
-		}
-		else if (memcmp(cmd, "QUIT", 4) == 0)
-		{
-			return 109;
-		}
-	}
-
-	return 0;
-}
 
 int CUdtCore::ProcessRecvCtrl(CLIENTCONEXT * cxt)
 {
@@ -744,19 +644,42 @@ int CUdtCore::ProcessRecvCtrl(CLIENTCONEXT * cxt)
 	std::vector<std::string> vecFileName;
 	UDTSOCKET sockCtrl = cxt->sockAccept;
 
+	// send login user name
+	memset(cmd, 0, CMD_SIZE);
+	sprintf(cmd, "220 %s", "Welcome to siteView turboTranfser");
+	if (UDT::ERROR == UDT::send(sockCtrl, (char*)cmd, CMD_SIZE, 0))
+	{
+		const char * error = UDT::getlasterror_desc();
+		m_pCallBack->onFinished(error, 108, sockCtrl);
+		UDT::close(sockCtrl);
+		return -1;
+	}
+
 	while (true)
 	{
 		memset(cmd, 0, CMD_SIZE);
 		if (UDT::ERROR == UDT::recv(sockCtrl, cmd, CMD_SIZE, 0))
-			return 108;
+		{
+			const char * error = UDT::getlasterror_desc();
+			m_pCallBack->onFinished(error, 108, sockCtrl);
+			break;
+		}
 		if (memcmp(cmd,"TEXT", 4) == 0)	// 1.	recv message response（TSR）
 		{
 			// recv message
 			if (UDT::ERROR == UDT::recv(sockCtrl, (char*)&nLen, sizeof(nLen), 0))
-				return 108;
+			{
+				const char * error = UDT::getlasterror_desc();
+				m_pCallBack->onFinished(error, 108, sockCtrl);
+				break;
+			}
 			char * pstrMsg = new char[nLen+2];
 			if (UDT::ERROR == UDT::recv(sockCtrl, pstrMsg, nLen, 0))
-				return 108;
+			{
+				const char * error = UDT::getlasterror_desc();
+				m_pCallBack->onFinished(error, 108, sockCtrl);
+				break;
+			}
 			pstrMsg[nLen] = '\0';
 #ifdef WIN32
 			szTmp = WIN32_WC2C(WIN32_CU2WC(pstrMsg));
@@ -765,10 +688,31 @@ int CUdtCore::ProcessRecvCtrl(CLIENTCONEXT * cxt)
 #endif
 			// notify to up
 			m_pCallBack->onRecvMessage(szTmp.c_str(), cxt->strClientAddr.c_str(), szHostName.c_str());
-			return 0;
+			break;
+		}
+		else if (memcmp(cmd, "ACCT", 4) == 0)
+		{
+			// ACCT系统特权帐号就是控制端口的PORT命令内容、用来匹配PORT-DATA
+			szFilePath = "";
+			szTmp = cmd;
+			szPort = szTmp.substr(5);
 		}
 		else if (memcmp(cmd, "USER", 4) == 0)
 		{
+			szUser = cmd;
+			szUser = szUser.substr(5);
+			memset(cmd, 0, CMD_SIZE);
+			sprintf(cmd, "230 %s", "User logged in, proceed");
+			if (UDT::ERROR == UDT::send(sockCtrl, cmd, CMD_SIZE, 0))
+			{
+				const char * error = UDT::getlasterror_desc();
+				m_pCallBack->onFinished(error, 108, sockCtrl);
+				break;
+			}
+		}
+		else if (memcmp(cmd, "SITE", 4) == 0)
+		{
+			// 由服务器提供的特殊参数
 			szHostName = "";
 			szTmp = cmd;
 			szTmp = szTmp.substr(5);
@@ -801,10 +745,8 @@ int CUdtCore::ProcessRecvCtrl(CLIENTCONEXT * cxt)
 			cxt->fileName = szFileName;
 			cxt->nFileTotalSize = nFileTotalSize;
 			cxt->nFileCount = nCount;
-		}
-		else if (memcmp(cmd, "ACCT", 4) == 0)
-		{
-
+			m_pCallBack->onAccept(cxt->strClientAddr.c_str(), szFileName.c_str(), nCount, nFileTotalSize, 
+				szRecdevice.c_str(), szRectype.c_str(), szOwndevice.c_str(), szOwntype.c_str(), szSendType.c_str(), szFileType.c_str(), sockCtrl);
 		}
 		else if (memcmp(cmd, "NLST", 4) == 0)
 		{
@@ -848,15 +790,10 @@ int CUdtCore::ProcessRecvCtrl(CLIENTCONEXT * cxt)
 				UdtFile::CreateDir(szFolder.c_str());
 			}
 		}
-		else if (memcmp(cmd, "NOOP", 4) == 0)
-		{
-			m_pCallBack->onAccept(cxt->strClientAddr.c_str(), szFileName.c_str(), nCount, nFileTotalSize, 
-				szRecdevice.c_str(), szRectype.c_str(), szOwndevice.c_str(), szOwntype.c_str(), szSendType.c_str(), szFileType.c_str(), sockCtrl);
-		}
 		else if (memcmp(cmd, "PORT", 4) == 0)
 		{
 			szTmp = cmd;
-			const string szPort = szTmp.substr(5);
+			szPort = szTmp.substr(5);
 			CLIENTCONEXT * pData = new CLIENTCONEXT();
 			nPos = szPort.find_last_of(",");
 			if (nPos >= 0)
@@ -877,6 +814,7 @@ int CUdtCore::ProcessRecvCtrl(CLIENTCONEXT * cxt)
 				pData->sockListen = sockCtrl;
 				pData->vecFiles = vecFileName;
 				pData->vecDirs = vecDirName;
+				pData->szPort = szPort;
 				pData->nFileTotalSize = nFileTotalSize;
 				pData->pThis = this;
 				pData->Type = OP_RCV_FILE;
@@ -889,8 +827,9 @@ int CUdtCore::ProcessRecvCtrl(CLIENTCONEXT * cxt)
 #endif
 			}
 		}
-		else if (memcmp(cmd, "NOOP", 4) == 0)
+		else if (memcmp(cmd, "STOR", 4) == 0)
 		{
+
 		}
 		else if (memcmp(cmd, "RETR", 4) == 0)
 		{
@@ -906,9 +845,14 @@ int CUdtCore::ProcessRecvCtrl(CLIENTCONEXT * cxt)
 				_FileInfo info;
 				UdtFile::GetInfo(szFilePath.c_str(), info);
 				nFileSize = info.nFileSize;
-
-				if (UDT::ERROR == UDT::send(sockCtrl, (char*)&nFileSize, sizeof(nFileSize), 0))
-					return 108;
+				memset(cmd, 0, CMD_SIZE);
+				sprintf(cmd, "213 %d", nFileSize);
+				if (UDT::ERROR == UDT::send(sockCtrl, cmd, CMD_SIZE, 0))
+				{
+					const char * error = UDT::getlasterror_desc();
+					m_pCallBack->onFinished(error, 108, sockCtrl);
+					break;
+				}
 
 				fstream ifs(szFilePath.c_str(), ios::in | ios::binary);
 				int64_t nOffset = 0, left = nFileSize;
@@ -923,45 +867,70 @@ int CUdtCore::ProcessRecvCtrl(CLIENTCONEXT * cxt)
 					}
 					CGuard::leaveCS(m_Lock);
 
-					UDT::TRACEINFO trace;
-					UDT::perfmon(sockCtrl, &trace);
-
 					int64_t send = 0;
 					if (left > TO_SND)
 						send = UDT::sendfile(sockCtrl, ifs, nOffset, TO_SND);
 					else
 						send = UDT::sendfile(sockCtrl, ifs, nOffset, left);
-
 					if (UDT::ERROR == send)
-						return 108;
-
+					{
+						const char * error = UDT::getlasterror_desc();
+						m_pCallBack->onFinished(error, 108, sockCtrl);
+						UDT::close(sockCtrl);
+						return -1;
+					}
 					left -= send;
 					nSendSize += send;
-
-					CGuard::enterCS(m_Lock);
-					cxt->iProgress = trace.mbpsSendRate / 8;
-					CGuard::leaveCS(m_Lock);
 				}
 				ifs.close();
-				m_pCallBack->onAcceptonFinish(cxt->strClientAddr.c_str(), szFileName.c_str(), 2, sockCtrl);
+				m_pCallBack->onAcceptonFinish(cxt->strClientAddr.c_str(), szFileName.c_str(), nFileSize, 2, sockCtrl);
 			}
 			catch (...)
 			{
-				return 108;
+				m_pCallBack->onFinished("open the file faild", 108, sockCtrl);
+				break;
 			}
 		}
 		else if (memcmp(cmd, "ABOR", 4) == 0)
 		{
 			CGuard::enterCS(m_Lock);
+			if (m_bTransfer)
+				m_pCallBack->onFinished("other stop send file", 105, sockCtrl);
+			else
+				m_pCallBack->onFinished("owner stop recv file", 106, sockCtrl);
 			m_bTransfer = false;
 			CGuard::leaveCS(m_Lock);
+
+			memset(cmd, 0, CMD_SIZE);
+			sprintf(cmd, "426 %s", "stop receive file");
+			if (UDT::ERROR == UDT::send(sockCtrl, cmd, CMD_SIZE, 0))
+			{
+				const char * error = UDT::getlasterror_desc();
+				m_pCallBack->onFinished(error, 108, sockCtrl);
+				break;
+			}
+		}
+		else if (memcmp(cmd, "MSR", 3) == 0)
+		{
+			memset(cmd, 0, CMD_SIZE);
+			memcpy(cmd, "FSV", 3);
+			if (UDT::ERROR == UDT::send(sockCtrl, (char*)cmd, 3, 0))
+			{
+				const char * error = UDT::getlasterror_desc();
+				m_pCallBack->onFinished(error, 108, sockCtrl);
+				break;
+			}
+			m_pCallBack->onFinished("other version is low", 112, sockCtrl);
+			break;
 		}
 		else if (memcmp(cmd, "QUIT", 4) == 0)
 		{
-			return 103;
+			m_pCallBack->onFinished("server exit", 120, sockCtrl);
+			break;
 		}
 	}
 
+	UDT::close(sockCtrl);
 	return 0;
 }
 
@@ -974,39 +943,80 @@ int CUdtCore::ProcessRecvFile(CLIENTCONEXT * cxt)
 	string szHostName, szFileName, szRecdevice, szRectype, szOwndevice, szOwntype, szSendType, szFileType;
 	const string szReplyPath = m_szFileSavePath;
 	std::vector<std::string> vecFileName;
-	UDTSOCKET sock = cxt->sockAccept;
-	UDTSOCKET sockCtrl = cxt->sockListen;
 	nFileTotalSize = cxt->nFileTotalSize;
 
-	UDTSOCKET sockData;
-	if (CreateUDTSocket(sockData, "7777") < 0)
+	if (CreateUDTSocket(cxt->sockAccept, "7777") < 0)
 	{
 		return 108;
 	}
-	if (UDT_Connect(sockData, cxt->strClientAddr.c_str(), "7777") < 0)
+	// connect to data port
+	while (true)
 	{
+		if (UDT_Connect(cxt->sockAccept, cxt->strServerAddr.c_str(), "7777") < 0)
+		{
+			const char * error = UDT::getlasterror_desc();
+			m_pCallBack->onFinished(error,119, cxt->sockAccept);
+			nLen++;
+#ifdef WIN32
+			Sleep(1000);
+#else
+			sleep(1);
+#endif
+		}
+		else
+			break;
+		if (nLen >= 3)
+		{
+			m_pCallBack->onFinished("Connect fail", 119, cxt->sockAccept);
+			return -1;
+		}
+	}
+	UDTSOCKET sockData = cxt->sockAccept;
+	UDTSOCKET sockCtrl = cxt->sockListen;
+	// receive welcome info
+	memset(cmd, 0, CMD_SIZE);
+	if (UDT::ERROR == UDT::recv(sockData, cmd, CMD_SIZE, 0))
+	{
+		const char * error = UDT::getlasterror_desc();
+		m_pCallBack->onFinished(error, 108, sockData);
 		UDT::close(sockData);
-		return 108;
+		return -1;
 	}
-	cxt->sockAccept = sockData;
+
 	// send login user name
 	memset(cmd, 0, CMD_SIZE);
-	sprintf(cmd, "USER %s%s", cxt->strClientAddr.c_str(), cxt->strClientPort.c_str());
+	sprintf(cmd, "ACCT %s", cxt->szPort.c_str());
 	if (UDT::ERROR == UDT::send(sockData, (char*)cmd, CMD_SIZE, 0))
-		return 108;
+	{
+		const char * error = UDT::getlasterror_desc();
+		m_pCallBack->onFinished(error, 108, sockData);
+		UDT::close(sockData);
+		return -1;
+	}
 
 	for (vector<string>::iterator iter = cxt->vecFiles.begin(); iter != cxt->vecFiles.end(); iter++)
 	{
-		szFilePath = *iter;
+		const string szRemoteFileName = *iter;
 		// send login user name
 		memset(cmd, 0, CMD_SIZE);
-		sprintf(cmd, "RETR %s", szFilePath.c_str());
+		sprintf(cmd, "RETR %s", szRemoteFileName.c_str());
 		if (UDT::ERROR == UDT::send(sockData, cmd, CMD_SIZE, 0))
-			return 108;
+		{
+			const char * error = UDT::getlasterror_desc();
+			m_pCallBack->onFinished(error, 108, sockData);
+			UDT::close(sockData);
+			return -1;
+		}
 		if (UDT::ERROR == UDT::recv(sockData, (char*)&nFileSize, sizeof(nFileSize), 0))
-			return 108;
+		{
+			const char * error = UDT::getlasterror_desc();
+			m_pCallBack->onFinished(error, 108, sockData);
+			UDT::close(sockData);
+			return -1;
+		}
 
 		szFileName = "";
+		szFilePath = szRemoteFileName;
 		for (vector<string>::iterator iter2 = cxt->vecDirs.begin(); iter2 != cxt->vecDirs.end(); iter2++)
 		{
 			szTmp = *iter2;
@@ -1022,7 +1032,12 @@ int CUdtCore::ProcessRecvFile(CLIENTCONEXT * cxt)
 				{
 					szTmp = szTmp.substr(0, nPos);
 					szFileName = szFilePath.substr(szTmp.size()+1);
-					szFilePath = szReplyPath + szFileName;
+					if (cxt->vecFiles.size() <= 1)
+					{
+						szFilePath = szReplyPath;
+					}
+					else
+						szFilePath = szReplyPath + szFileName;
 					nPos = szFilePath.find_last_of("\\");
 					if (nPos < 0)
 					{
@@ -1045,7 +1060,12 @@ int CUdtCore::ProcessRecvFile(CLIENTCONEXT * cxt)
 				nPos = szFilePath.find_last_of("/");
 			}
 			szFileName = szFilePath.substr(nPos+1);
-			szFilePath = m_szFileSavePath + szFileName;
+			if (cxt->vecFiles.size() <= 1)
+			{
+				szFilePath = szReplyPath;
+			}
+			else
+				szFilePath = szReplyPath + szFileName;
 		}
 
 		// receive the file
@@ -1060,16 +1080,13 @@ int CUdtCore::ProcessRecvFile(CLIENTCONEXT * cxt)
 				// send quit
 				memset(cmd, 0, CMD_SIZE);
 				sprintf(cmd, "%s", "QUIT");
-				if (UDT::ERROR == UDT::send(sockData, (char*)cmd, CMD_SIZE, 0))
-					return 108;
-				nReturnCode = 426;
-				if (UDT::ERROR == UDT::send(sockCtrl, (char*)&nReturnCode, sizeof(nReturnCode), 0))
+				if (UDT::ERROR == UDT::send(sockData, cmd, CMD_SIZE, 0))
 					return 108;
 				CGuard::leaveCS(m_Lock);
 				return 106;
 			}
 			CGuard::leaveCS(m_Lock);
-
+			// receive file
 			UDT::TRACEINFO trace;
 			UDT::perfmon(sockData, &trace);
 			int64_t recv = 0;
@@ -1083,14 +1100,17 @@ int CUdtCore::ProcessRecvFile(CLIENTCONEXT * cxt)
 
 			left -= recv;
 			nRecvSize += recv;
-			nReturnCode = 805;
-			if (UDT::ERROR == UDT::send(sockCtrl, (char*)&nReturnCode, sizeof(nReturnCode), 0))
-				return 108;
-			if (UDT::ERROR == UDT::send(sockCtrl, (char*)&nRecvSize, sizeof(nRecvSize), 0))
-				return 108;
 			// send recv rate
 			nReturnCode = (int)(trace.mbpsRecvRate * 100);
-			if (UDT::ERROR == UDT::send(sockCtrl, (char*)&nReturnCode, sizeof(nReturnCode), 0))
+			memset(cmd, 0, CMD_SIZE);
+			sprintf(cmd, "%d", nRecvSize);
+			szTmp = cmd;
+			memset(cmd, 0, CMD_SIZE);
+			sprintf(cmd, "%d", nReturnCode);
+			szTmp2 = cmd;
+			memset(cmd, 0, CMD_SIZE);
+			sprintf(cmd, "%s%s%s%s%s%s", "214 ", szTmp.c_str(), " ", szTmp2.c_str(), " ", szRemoteFileName.c_str());
+			if (UDT::ERROR == UDT::send(sockCtrl, cmd, CMD_SIZE, 0))
 				return 108;
 			m_pCallBack->onTransfer(nFileTotalSize, nRecvSize, trace.mbpsRecvRate, szFilePath.c_str(), 1, sockData);
 		}
@@ -1110,11 +1130,11 @@ int CUdtCore::ProcessRecvFile(CLIENTCONEXT * cxt)
 			{
 				szFolder = szTmp;
 				szTmp = szReplyPath + szFolder;
-				m_pCallBack->onAcceptonFinish(cxt->strClientAddr.c_str(), szTmp.c_str(), 1, sockCtrl);
+				m_pCallBack->onAcceptonFinish(cxt->strClientAddr.c_str(), szTmp.c_str(), nFileSize, 1, sockCtrl);
 			}
 		}
 		else
-			m_pCallBack->onAcceptonFinish(cxt->strClientAddr.c_str(), szFilePath.c_str(), 1, sockCtrl);
+			m_pCallBack->onAcceptonFinish(cxt->strClientAddr.c_str(), szFilePath.c_str(), nFileSize, 1, sockCtrl);
 	}
 
 	// send quit
@@ -1122,10 +1142,12 @@ int CUdtCore::ProcessRecvFile(CLIENTCONEXT * cxt)
 	sprintf(cmd, "%s", "QUIT");
 	if (UDT::ERROR == UDT::send(sockData, (char*)cmd, CMD_SIZE, 0))
 		return 108;
-	nReturnCode = 426;
-	if (UDT::ERROR == UDT::send(sockCtrl, (char*)&nReturnCode, sizeof(nReturnCode), 0))
+	memset(cmd, 0, CMD_SIZE);
+	sprintf(cmd, "226 %s", "transfer ok");
+	if (UDT::ERROR == UDT::send(sockCtrl, cmd, CMD_SIZE, 0))
 		return 108;
 
+	m_pCallBack->onFinished("recv file sucess", 110, sockCtrl);
 	return 0;
 }
 
@@ -1173,44 +1195,28 @@ void * CUdtCore::_WorkThreadProc(void * pParam)
 DWORD WINAPI CUdtCore::_WorkThreadProc(LPVOID pParam)
 #endif
 {
-	CLIENTCONEXT * pThis = (CLIENTCONEXT *)pParam;
+	CLIENTCONEXT * cxt = (CLIENTCONEXT *)pParam;
 	int nReturnCode = 0;
 
-	if (pThis->Type == OP_SND_CTRL)
+	if (cxt->Type == OP_SND_CTRL)
 	{
-		nReturnCode = pThis->pThis->ProcessSendCtrl(pThis);
-		UDT::close(pThis->sockAccept);
-		pThis->pThis->m_pCallBack->onFinished("RETURN", nReturnCode, pThis->sockAccept);
+		cxt->pThis->ProcessSendCtrl(cxt);
 	}
-	else if (pThis->Type == OP_SND_FILE)
+	else if (cxt->Type == OP_SND_FILE)
 	{
-		nReturnCode = pThis->pThis->ProcessSendFile(pThis);
-		UDT::close(pThis->sockAccept);
 	}
-	else if (pThis->Type == OP_RCV_CTRL)
+	else if (cxt->Type == OP_RCV_CTRL)
 	{
-		nReturnCode = pThis->pThis->ProcessRecvCtrl(pThis);
-		UDT::close(pThis->sockAccept);
-		pThis->pThis->m_pCallBack->onFinished("RETURN", nReturnCode, pThis->sockAccept);
+		cxt->pThis->ProcessRecvCtrl(cxt);
 	}
-	else if (pThis->Type == OP_RCV_FILE)
+	else if (cxt->Type == OP_RCV_FILE)
 	{
-		nReturnCode = pThis->pThis->ProcessRecvFile(pThis);
-		UDT::close(pThis->sockAccept);
-	}
-
-	CGuard::enterCS(pThis->pThis->m_Lock);
-	vector<PCLIENTCONEXT>::iterator iter = pThis->pThis->VEC_CLIENT.begin();
-	while (iter != pThis->pThis->VEC_CLIENT.end())
-	{
-		if ((*iter)->sockAccept == pThis->sockAccept)
+		nReturnCode = cxt->pThis->ProcessRecvFile(cxt);
+		if (nReturnCode == 119)
 		{
-			iter = pThis->pThis->VEC_CLIENT.erase(iter);
+			UDT::close(cxt->sockAccept);
 		}
-		else
-			iter++;
 	}
-	CGuard::leaveCS(pThis->pThis->m_Lock);
 
 #ifndef WIN32
 	return NULL;

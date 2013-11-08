@@ -6,8 +6,6 @@
 	#include <sys/uio.h>
 	#include <arpa/inet.h>
 	#include <unistd.h>
-	#include <cstdlib>
-	#include <cstring>
 	#include <netdb.h>
 	#include <pthread.h>
 	#include <errno.h>
@@ -24,25 +22,22 @@
 #include <iostream>
 #include <sys/stat.h>
 #include <stdio.h>
-#include <cstdlib>
-#include <cstring>
 #include <vector>
 #include <string.h>
 #include <fstream>
-#include <iostream>
-#include <stdio.h>
 
 #include "udt.h"
-#include "cc.h"
 #include "common.h"
+#include "UdtFile.h"
 
+#define CMD_SIZE 512
 #define TO_SND 1024*100		// 文件发送数据块大小：((1(byte) * 1024)(kb) * 1024)(mb)
 
 class CUDTCallBack
 {
 public:
 	virtual void onAccept(const char* pstrAddr, const char* pstrFileName, int nFileCount, const int64_t nFileSize, const char* recdevice, const char* rectype, const char* owndevice, const char* owntype, const char* SendType, const char* FileType, int sock) = 0;
-	virtual void onAcceptonFinish(const char* pstrAddr, const char* pFileName, int Type, int sock) = 0;
+	virtual void onAcceptonFinish(const char* pstrAddr, const char* pFileName, const int64_t nFileSize, int Type, int sock) = 0;
 	virtual void onFinished(const char * pstrMsg, int Type, int sock) = 0;
 	virtual void onTransfer(const int64_t nFileTotalSize, const int64_t nCurrent, const double iProgress, const char* pstrFileName, int Type, int sock) = 0;
 	virtual void onRecvMessage(const char* pstrMsg, const char* pIpAddr, const char* pHostName) = 0;
@@ -97,24 +92,21 @@ private:
 		std::string sendType;
 		int64_t nFileTotalSize;
 		int64_t nRecvSize;
-		int nCtrlFileGroup;
 		int nFileCount;
 		bool bTransfer;
-		double iProgress;
+		std::string szPort;
 		std::string fileName;
 		std::string fileSavePath;
 		std::vector<std::string> vecFiles;
-		std::vector<std::string> vecFileDir;
-		std::vector<std::string> vecFilePath;
+		std::vector<std::string> vecDirs;
+		std::vector<_FileInfo> fileInfo;
 		OP_TYPE Type;
 		CUdtCore * pThis;
 	}CLIENTCONEXT, *PCLIENTCONEXT;
 
-	void SearchFileInDirectroy(const std::string & szPath, int64_t & nTotalSize, std::vector<std::string> & vecDirName, std::vector<std::string> & vecFileName);
-	void CreateDirectroy(const std::string & szPath);
 	void ProcessAccept(LISTENSOCKET * cxt);
 	int ProcessSendCtrl(CLIENTCONEXT * cxt);
-	int ProcessSendFile(CLIENTCONEXT * cxt);
+	int ProcessRecvCtrl(CLIENTCONEXT * cxt);
 	int ProcessRecvFile(CLIENTCONEXT * cxt);
 	int InitListenSocket(const char* pstrPort, UDTSOCKET & sockListen);
 	int CreateTCPSocket(SYSSOCKET & ssock, const char* pstrPort, bool bBind = false, bool rendezvous = false);
@@ -126,7 +118,8 @@ private:
 	CUDTCallBack * m_pCallBack;
 	std::vector<PLISTENSOCKET> VEC_LISTEN;
 	std::vector<PCLIENTCONEXT> VEC_CLIENT;
-
+	std::string m_szFileSavePath;
+	UDTSOCKET m_sockListen;
 	int m_nCtrlPort;
 	int m_nFilePort;
 	bool m_bListenStatus;

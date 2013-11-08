@@ -37,7 +37,7 @@ class CUDTCallBack
 {
 public:
 	virtual void onAccept(const char* pstrAddr, const char* pstrFileName, int nFileCount, const int64_t nFileSize, const char* recdevice, const char* rectype, const char* owndevice, const char* owntype, const char* SendType, const char* FileType, int sock) = 0;
-	virtual void onAcceptonFinish(const char* pstrAddr, const char* pFileName, int Type, int sock) = 0;
+	virtual void onAcceptonFinish(const char* pstrAddr, const char* pFileName, const int64_t nFileSize, int Type, int sock) = 0;
 	virtual void onFinished(const char * pstrMsg, int Type, int sock) = 0;
 	virtual void onTransfer(const int64_t nFileTotalSize, const int64_t nCurrent, const double iProgress, const char* pstrFileName, int Type, int sock) = 0;
 	virtual void onRecvMessage(const char* pstrMsg, const char* pIpAddr, const char* pHostName) = 0;
@@ -92,10 +92,9 @@ private:
 		std::string sendType;
 		int64_t nFileTotalSize;
 		int64_t nRecvSize;
-		int nCtrlFileGroup;
 		int nFileCount;
 		bool bTransfer;
-		double iProgress;
+		std::string szPort;
 		std::string fileName;
 		std::string fileSavePath;
 		std::vector<std::string> vecFiles;
@@ -107,7 +106,6 @@ private:
 
 	void ProcessAccept(LISTENSOCKET * cxt);
 	int ProcessSendCtrl(CLIENTCONEXT * cxt);
-	int ProcessSendFile(CLIENTCONEXT * cxt);
 	int ProcessRecvCtrl(CLIENTCONEXT * cxt);
 	int ProcessRecvFile(CLIENTCONEXT * cxt);
 	int InitListenSocket(const char* pstrPort, UDTSOCKET & sockListen);
