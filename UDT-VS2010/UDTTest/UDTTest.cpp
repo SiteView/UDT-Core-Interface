@@ -12,7 +12,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	printf("\t ***********************************/\n");
 
 	CUdtProxy * pUdt = CUdtProxy::GetInStance();
-	pUdt->core()->StartListen(7777, 7778);
+	pUdt->core()->StartListen(7777);
 	int sock;
 	char ip[32] = {0};
 	char buf[256] = {0};
@@ -75,6 +75,10 @@ int _tmain(int argc, _TCHAR* argv[])
 		{
 			printf("quit.....\n");
 			break;
+		}
+		else if (strcmp(buf, "s") == 0)
+		{
+			pUdt->core()->StopListen();
 		}
 	}
 

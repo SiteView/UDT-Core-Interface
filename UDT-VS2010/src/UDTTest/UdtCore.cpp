@@ -5,9 +5,8 @@ using namespace std;
 CUdtCore::CUdtCore(CUDTCallBack * pCallback)
 	: m_pCallBack(pCallback)
 	, m_bListenStatus(false)
-	, m_nCtrlPort(7777)
-	, m_nFilePort(7778)
 {
+	UDT::startup();
 #ifndef WIN32
 	pthread_mutex_init(&m_Lock, NULL);
 #else
@@ -23,38 +22,25 @@ CUdtCore::~CUdtCore()
 #else
 	CloseHandle(m_Lock);
 #endif
+	UDT::cleanup();
 }
 
 
-int CUdtCore::StartListen(const int nCtrlPort, const int nFilePort)
+int CUdtCore::StartListen(const int nCtrlPort)
 {
-	UDT::startup();
-
-	if (m_bListenStatus)
-		return 0;
-
-	m_bListenStatus = true;
-	m_nCtrlPort = nCtrlPort;
-	m_nFilePort = nFilePort;
-
-	// Create listen Control thread function
-	LISTENSOCKET * pCtrl = new LISTENSOCKET();
-	char strPort[32];
-	memset(strPort, 0, 32);
-	sprintf(strPort, "%d", m_nCtrlPort);
-	pCtrl->strServerPort = strPort;
-	pCtrl->bListen = false;
-	pCtrl->Type = OP_RCV_CTRL;
-	pCtrl->pThis = this;
 #ifndef WIN32
 	pthread_t hCHandle;
-	pthread_create(&hCHandle, NULL, _ListenThreadProc, pCtrl);
+	pthread_create(&hCHandle, NULL, _ListenThreadProc, this);
 	pthread_detach(hCHandle);
 #else
-	HANDLE hCHand = CreateThread(NULL, 0, _ListenThreadProc, pCtrl, 0, NULL);
+	CreateThread(NULL, 0, _ListenThreadProc, this, 0, NULL);
 #endif
-
 	return 0;
+}
+
+void CUdtCore::StopListen()
+{
+	UDT::close(m_sockListen);
 }
 
 int CUdtCore::SendMsg(const char* pstrAddr, const char* pstrMsg, const char* pstrHostName)
@@ -117,9 +103,6 @@ Loop:
 
 int CUdtCore::SendFiles(const char* pstrAddr, const std::vector<std::string> vecFiles, const char* owndevice, const char* owntype, const char* recdevice, const char* rectype, const char* pstrSendtype)
 {
-	if (vecFiles.empty())
-		return 0;
-
 	if (UDT::getsockstate(m_sockListen) != LISTENING)
 	{
 		cout << "Port 7777  is not in listening states!" << endl;
@@ -147,9 +130,7 @@ int CUdtCore::SendFiles(const char* pstrAddr, const std::vector<std::string> vec
 	UDT::startup();
 	UDTSOCKET client;
 	char strCtrlPort[32];
-	char strFilePort[32];
 	sprintf(strCtrlPort, "%d", 7777);
-	sprintf(strFilePort, "%d", 7778);
 
 	// connect to CtrlPort
 	if (CreateUDTSocket(client, strCtrlPort) < 0)
@@ -165,11 +146,16 @@ int CUdtCore::SendFiles(const char* pstrAddr, const std::vector<std::string> vec
 	CLIENTCONEXT * pCtrl = new CLIENTCONEXT;
 	pCtrl->strServerAddr = pstrAddr;
 	pCtrl->strServerPort = strCtrlPort;
-	pCtrl->ownDev = owndevice;
-	pCtrl->ownType = owntype;
-	pCtrl->recvDev = recdevice;
-	pCtrl->recvType = rectype;
-	pCtrl->sendType = pstrSendtype;
+	szTmp = owndevice;
+	pCtrl->strDevInfo += szTmp;
+	szTmp = owntype;
+	pCtrl->strDevInfo = pCtrl->strDevInfo + "\\" + szTmp;
+	szTmp = recdevice;
+	pCtrl->strDevInfo = pCtrl->strDevInfo + "\\" + szTmp;
+	szTmp = rectype;
+	pCtrl->strDevInfo = pCtrl->strDevInfo + "\\" + szTmp;
+	szTmp = pstrSendtype;
+	pCtrl->strDevInfo = pCtrl->strDevInfo + "\\" + szTmp;
 	pCtrl->vecFiles = vecFiles;
 	pCtrl->vecDirs = vecDirs;
 	pCtrl->fileInfo = info;
@@ -239,11 +225,6 @@ void CUdtCore::StopTransfer(const UDTSOCKET sock, const int nType)
 		if (UDT::ERROR == UDT::send(sock, cmd, CMD_SIZE, 0))
 			return ;
 	}
-}
-
-void CUdtCore::StopListen()
-{
-	UDT::close(m_sockListen);
 }
 
 
@@ -413,7 +394,7 @@ void CUdtCore::ProcessAccept(LISTENSOCKET * cxt)
 	pthread_create(&hHandle, NULL, _WorkThreadProc, pData);
 	pthread_detach(hHandle);
 #else
-	HANDLE hHandle = CreateThread(NULL, 0, _WorkThreadProc, pData, 0, NULL);
+	CreateThread(NULL, 0, _WorkThreadProc, pData, 0, NULL);
 #endif
 }
 
@@ -484,13 +465,35 @@ int CUdtCore::ProcessSendCtrl(CLIENTCONEXT * cxt)
 		else if (memcmp(cmd, "200", 3) == 0)
 		{
 			// 成功
+			// get sockaddr info
+			struct sockaddr_in addr_c;
+			nLen = sizeof(addr_c);
+			UDT::getsockname(sockCtrl, (sockaddr*)&addr_c, &nLen);
+			char clientHost[NI_MAXHOST];
+			char clientService[NI_MAXSERV];
+			sprintf(clientHost, "%s", inet_ntoa(addr_c.sin_addr));
+			sprintf(clientService, "%d", addr_c.sin_port);
+
 			memset(cmd, 0, CMD_SIZE);
-			sprintf(cmd, "%s%s%s%s", "PORT ", clientHost, ",7000,", clientService);
+			strcpy(cmd, "PORT ");
+			szTmp = clientHost;
+			nPos = szTmp.find_first_of(".");
+			strcat(cmd, (szTmp.substr(0, nPos)).c_str());
+			strcat(cmd, ",");
+			szTmp = szTmp.substr(nPos+1);
+			nPos = szTmp.find_first_of(".");
+			strcat(cmd, (szTmp.substr(0, nPos)).c_str());
+			strcat(cmd, ",");
+			szTmp = szTmp.substr(nPos+1);
+			nPos = szTmp.find_first_of(".");
+			strcat(cmd, (szTmp.substr(0, nPos)).c_str());
+			strcat(cmd, ",");
+			szTmp = szTmp.substr(nPos+1);
+			strcat(cmd, szTmp.c_str());
+			strcat(cmd, ",");
+			strcat(cmd, "30,97");
 			if (UDT::ERROR == UDT::send(sockCtrl, (char*)cmd, CMD_SIZE, 0))
 				return 108;
-			//szTmp = cmd;
-			//cxt->uuid = szTmp.substr(5);
-			//VEC_CLIENT.push_back(cxt);
 		}
 		else if (memcmp(cmd, "202", 3) == 0)
 		{
@@ -585,11 +588,10 @@ int CUdtCore::ProcessSendCtrl(CLIENTCONEXT * cxt)
 				nPos = szFilePath.find_last_of("\\");
 			}
 			szFileName = szFilePath.substr(nPos+1);
-			szTmp = szFileName + "\\" + cxt->ownDev + "\\" + cxt->ownType + "\\" + cxt->recvDev + "\\" + cxt->recvType + "\\" + cxt->sendType;
 			if (cxt->vecFiles.size() < cxt->fileInfo.size())
-				szTmp = szTmp + "\\D\\";
+				szTmp = szFileName + "\\" + cxt->strDevInfo + "\\D\\";
 			else
-				szTmp = szTmp + "\\F\\";
+				szTmp = szFileName + "\\" + cxt->strDevInfo + "\\F\\";
 			//#ifdef WIN32
 			//	szTmp = WIN32_WC2CU(WIN32_C2WC(szTmp.c_str()));
 			//#endif
@@ -984,15 +986,15 @@ int CUdtCore::ProcessRecvFile(CLIENTCONEXT * cxt)
 	}
 
 	// send login user name
-	memset(cmd, 0, CMD_SIZE);
-	sprintf(cmd, "ACCT %s", cxt->szPort.c_str());
-	if (UDT::ERROR == UDT::send(sockData, (char*)cmd, CMD_SIZE, 0))
-	{
-		const char * error = UDT::getlasterror_desc();
-		m_pCallBack->onFinished(error, 108, sockData);
-		UDT::close(sockData);
-		return -1;
-	}
+	//memset(cmd, 0, CMD_SIZE);
+	//sprintf(cmd, "ACCT %s", cxt->szPort.c_str());
+	//if (UDT::ERROR == UDT::send(sockData, (char*)cmd, CMD_SIZE, 0))
+	//{
+	//	const char * error = UDT::getlasterror_desc();
+	//	m_pCallBack->onFinished(error, 108, sockData);
+	//	UDT::close(sockData);
+	//	return -1;
+	//}
 
 	for (vector<string>::iterator iter = cxt->vecFiles.begin(); iter != cxt->vecFiles.end(); iter++)
 	{
@@ -1007,14 +1009,17 @@ int CUdtCore::ProcessRecvFile(CLIENTCONEXT * cxt)
 			UDT::close(sockData);
 			return -1;
 		}
-		if (UDT::ERROR == UDT::recv(sockData, (char*)&nFileSize, sizeof(nFileSize), 0))
+		memset(cmd, 0, CMD_SIZE);
+		if (UDT::ERROR == UDT::recv(sockData, cmd, CMD_SIZE, 0))
 		{
 			const char * error = UDT::getlasterror_desc();
 			m_pCallBack->onFinished(error, 108, sockData);
 			UDT::close(sockData);
 			return -1;
 		}
-
+		szTmp = cmd;
+		szTmp = szTmp.substr(4);
+		nFileSize = atoi(szTmp.c_str());
 		szFileName = "";
 		szFilePath = szRemoteFileName;
 		for (vector<string>::iterator iter2 = cxt->vecDirs.begin(); iter2 != cxt->vecDirs.end(); iter2++)
@@ -1062,7 +1067,8 @@ int CUdtCore::ProcessRecvFile(CLIENTCONEXT * cxt)
 			szFileName = szFilePath.substr(nPos+1);
 			if (cxt->vecFiles.size() <= 1)
 			{
-				szFilePath = szReplyPath;
+				//szFilePath = szReplyPath;
+				szFilePath = szReplyPath + szFileName;
 			}
 			else
 				szFilePath = szReplyPath + szFileName;
@@ -1075,17 +1081,17 @@ int CUdtCore::ProcessRecvFile(CLIENTCONEXT * cxt)
 		while(left > 0)
 		{
 			CGuard::enterCS(m_Lock);
-			if (!m_bTransfer)
+			cxt->bTransfer = m_bTransfer;
+			CGuard::leaveCS(m_Lock);
+			if (!cxt->bTransfer)
 			{
 				// send quit
 				memset(cmd, 0, CMD_SIZE);
 				sprintf(cmd, "%s", "QUIT");
-				if (UDT::ERROR == UDT::send(sockData, cmd, CMD_SIZE, 0))
-					return 108;
-				CGuard::leaveCS(m_Lock);
+				UDT::send(sockData, cmd, CMD_SIZE, 0);
 				return 106;
 			}
-			CGuard::leaveCS(m_Lock);
+
 			// receive file
 			UDT::TRACEINFO trace;
 			UDT::perfmon(sockData, &trace);
@@ -1138,16 +1144,17 @@ int CUdtCore::ProcessRecvFile(CLIENTCONEXT * cxt)
 	}
 
 	// send quit
-	memset(cmd, 0, CMD_SIZE);
-	sprintf(cmd, "%s", "QUIT");
-	if (UDT::ERROR == UDT::send(sockData, (char*)cmd, CMD_SIZE, 0))
-		return 108;
+	//memset(cmd, 0, CMD_SIZE);
+	//sprintf(cmd, "%s", "QUIT");
+	//if (UDT::ERROR == UDT::send(sockData, (char*)cmd, CMD_SIZE, 0))
+	//	return 108;
 	memset(cmd, 0, CMD_SIZE);
 	sprintf(cmd, "226 %s", "transfer ok");
 	if (UDT::ERROR == UDT::send(sockCtrl, cmd, CMD_SIZE, 0))
 		return 108;
 
 	m_pCallBack->onFinished("recv file sucess", 110, sockCtrl);
+	UDT::close(sockData);
 	return 0;
 }
 
@@ -1158,29 +1165,76 @@ void * CUdtCore::_ListenThreadProc(void * pParam)
 DWORD WINAPI CUdtCore::_ListenThreadProc(LPVOID pParam)
 #endif
 {
-	LISTENSOCKET * cxt = (LISTENSOCKET *)pParam;
+	CUdtCore * pThis = (CUdtCore *)pParam;
+	UDTSOCKET sockListen = 0;
+	UDTSOCKET sockAccept = 0;
+	const char* strPort = "7000";
+	bool bListen = false;
 
 	while (true)
 	{
-		// Process Accept, StopListen()，会改变m_bListenStatus的状态
-		cxt->pThis->ProcessAccept(cxt);
-		if (!cxt->bListen)
+		// Create socket and Listen port
+		if (!bListen)
 		{
-			int nCount = 0;
-			while (NONEXIST != UDT::getsockstate(cxt->sockListen))
+			if (pThis->CreateUDTSocket(sockListen, strPort, true) < 0)
 			{
-				cout << "Listen port:" << cxt->strServerPort << "states:" << UDT::getsockstate(cxt->sockListen) << endl;
-				if (nCount > 8)
-					break;
-				nCount++;
-				Sleep(1500);
+				pThis->m_pCallBack->onFinished("Fail create socket!", 108, 0);
+				break;
 			}
-			cxt->pThis->m_bListenStatus = false;
+			if (UDT::ERROR == UDT::listen(sockListen, 10))
+			{
+				pThis->m_pCallBack->onFinished("Fail listen socket!", 108, 0);
+				UDT::close(sockListen);
+				break;
+			}
+			pThis->m_sockListen = sockListen;
+			bListen = true;
+			cout << "Successful listening port: " << strPort << endl;
+		}
+
+		// accept port
+		struct sockaddr_in clientaddr;
+		int addrlen = sizeof(clientaddr);
+		if (UDT::INVALID_SOCK == (sockAccept = UDT::accept(sockListen, (sockaddr*)&clientaddr, &addrlen)))
+		{
+			cout << "Fail accept port : " << strPort << ", ErrorMsg:" <<UDT::getlasterror().getErrorMessage() << endl;
+			pThis->m_pCallBack->onFinished("Accept error!", 108, 0);
+			UDT::close(sockListen);
+			bListen = false;
 			break;
 		}
+		// get client sockaddr info
+		char clienthost[NI_MAXHOST];
+		char clientservice[NI_MAXSERV];
+		sprintf(clienthost, "%s", inet_ntoa(clientaddr.sin_addr));
+		sprintf(clientservice, "%d", clientaddr.sin_port);
+		cout << "Accept port:" << strPort << ", New client connect:" << clienthost << ", Port:" << clientservice << endl;
+
+		CLIENTCONEXT * pData = new CLIENTCONEXT;
+		pData->strClientAddr = clienthost;
+		pData->strClientPort = clientservice;
+		pData->sockAccept = sockAccept;
+		pData->pThis = pThis;
+		pData->Type = OP_RCV_CTRL;
+#ifndef WIN32
+		pthread_t hHandle;
+		pthread_create(&hHandle, NULL, _WorkThreadProc, pData);
+		pthread_detach(hHandle);
+#else
+		CreateThread(NULL, 0, _WorkThreadProc, pData, 0, NULL);
+#endif
 	}
 
-	cout << "Exit _ListenThreadProc port:" << cxt->strServerPort << endl;
+	int nCount = 0;
+	while (NONEXIST != UDT::getsockstate(sockListen))
+	{
+		cout << "Listen port:" << strPort << "states:" << UDT::getsockstate(sockListen) << endl;
+		if (nCount > 8)
+			break;
+		nCount++;
+		Sleep(1000);
+	}
+	cout << "Exit _ListenThreadProc port:" << strPort << endl;
 
 #ifndef WIN32
 	return NULL;
@@ -1211,11 +1265,7 @@ DWORD WINAPI CUdtCore::_WorkThreadProc(LPVOID pParam)
 	}
 	else if (cxt->Type == OP_RCV_FILE)
 	{
-		nReturnCode = cxt->pThis->ProcessRecvFile(cxt);
-		if (nReturnCode == 119)
-		{
-			UDT::close(cxt->sockAccept);
-		}
+		cxt->pThis->ProcessRecvFile(cxt);
 	}
 
 #ifndef WIN32

@@ -20,11 +20,10 @@
 #endif
 
 #include <iostream>
-#include <sys/stat.h>
-#include <stdio.h>
-#include <vector>
-#include <string.h>
 #include <fstream>
+#include <sys/stat.h>
+#include <string.h>
+#include <vector>
 
 #include "udt.h"
 #include "common.h"
@@ -50,7 +49,7 @@ public:
 	CUdtCore(CUDTCallBack * pCallback);
 	~CUdtCore();
 
-	int StartListen(const int nCtrlPort, const int nFilePort);
+	int StartListen(const int nCtrlPort);
 	int SendMsg(const char* pstrAddr, const char* pstrMsg, const char* pstrHostName);
 	int SendFiles(const char* pstrAddr, const std::vector<std::string> vecFiles, const char* owndevice, const char* owntype, const char* recdevice, const char* rectype, const char* pstrSendtype);
 	void ReplyAccept(const UDTSOCKET sock, const char* pstrReply);
@@ -85,11 +84,7 @@ private:
 		std::string strServerAddr;
 		std::string strClientPort;
 		std::string strClientAddr;
-		std::string ownDev;
-		std::string ownType;
-		std::string recvDev;
-		std::string recvType;
-		std::string sendType;
+		std::string strDevInfo;
 		int64_t nFileTotalSize;
 		int64_t nRecvSize;
 		int nFileCount;
@@ -118,10 +113,9 @@ private:
 	CUDTCallBack * m_pCallBack;
 	std::vector<PLISTENSOCKET> VEC_LISTEN;
 	std::vector<PCLIENTCONEXT> VEC_CLIENT;
+	std::string m_szCtrlPort;
 	std::string m_szFileSavePath;
 	UDTSOCKET m_sockListen;
-	int m_nCtrlPort;
-	int m_nFilePort;
 	bool m_bListenStatus;
 	bool m_bTransfer;
 
