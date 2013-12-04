@@ -6,6 +6,8 @@
 	#include <sys/uio.h>
 	#include <arpa/inet.h>
 	#include <unistd.h>
+	#include <cstdlib>
+	#include <cstring>
 	#include <netdb.h>
 	#include <pthread.h>
 	#include <errno.h>
@@ -22,22 +24,25 @@
 #include <iostream>
 #include <sys/stat.h>
 #include <stdio.h>
+#include <cstdlib>
+#include <cstring>
 #include <vector>
 #include <string.h>
 #include <fstream>
+#include <iostream>
+#include <stdio.h>
 
 #include "udt.h"
+#include "cc.h"
 #include "common.h"
-#include "UdtFile.h"
 
-#define CMD_SIZE 512
 #define TO_SND 1024*100		// 文件发送数据块大小：((1(byte) * 1024)(kb) * 1024)(mb)
 
 class CUDTCallBack
 {
 public:
 	virtual void onAccept(const char* pstrAddr, const char* pstrFileName, int nFileCount, const int64_t nFileSize, const char* recdevice, const char* rectype, const char* owndevice, const char* owntype, const char* SendType, const char* FileType, int sock) = 0;
-	virtual void onAcceptonFinish(const char* pstrAddr, const char* pFileName, const int64_t nFileSize, int Type, int sock) = 0;
+	virtual void onAcceptonFinish(const char* pstrAddr, const char* pFileName, int Type, int sock) = 0;
 	virtual void onFinished(const char * pstrMsg, int Type, int sock) = 0;
 	virtual void onTransfer(const int64_t nFileTotalSize, const int64_t nCurrent, const double iProgress, const char* pstrFileName, int Type, int sock) = 0;
 	virtual void onRecvMessage(const char* pstrMsg, const char* pIpAddr, const char* pHostName) = 0;
@@ -51,11 +56,13 @@ public:
 	~CUdtCore();
 
 	int StartListen(const int nCtrlPort, const int nFilePort);
+	int GetListenStates();
 	int SendMsg(const char* pstrAddr, const char* pstrMsg, const char* pstrHostName);
 	int SendFiles(const char* pstrAddr, const std::vector<std::string> vecFiles, const char* owndevice, const char* owntype, const char* recdevice, const char* rectype, const char* pstrSendtype);
 	void ReplyAccept(const UDTSOCKET sock, const char* pstrReply);
 	void StopTransfer(const UDTSOCKET sock, const int nType);
 	void StopListen();
+	void RestartListen();
 
 private:
 	enum OP_TYPE
@@ -66,6 +73,13 @@ private:
 		OP_RCV_FILE
 	};
 
+	typedef struct _FileInfo
+	{
+		int64_t nFileSize;
+		std::string asciPath;
+		std::string utf8Path;
+	}FILEINFO, *PFILEINFO;
+
 	typedef struct _ListenSocket
 	{
 		UDTSOCKET sockListen;
@@ -73,6 +87,7 @@ private:
 		std::string strServerPort;
 		std::string strServerAddr;
 		bool bListen;
+		bool bRestartListen;
 		OP_TYPE Type;
 		CUdtCore * pThis;
 	}LISTENSOCKET, *PLISTENSOCKET;
@@ -92,21 +107,23 @@ private:
 		std::string sendType;
 		int64_t nFileTotalSize;
 		int64_t nRecvSize;
+		int nCtrlFileGroup;
 		int nFileCount;
 		bool bTransfer;
-		std::string szPort;
+		double iProgress;
 		std::string fileName;
 		std::string fileSavePath;
 		std::vector<std::string> vecFiles;
-		std::vector<std::string> vecDirs;
-		std::vector<_FileInfo> fileInfo;
+		std::vector<FILEINFO> vecFileInfo;
 		OP_TYPE Type;
 		CUdtCore * pThis;
 	}CLIENTCONEXT, *PCLIENTCONEXT;
 
-	void ProcessAccept(LISTENSOCKET * cxt);
+	void SearchFileInDirectroy(const std::string & szPath, int64_t & nTotalSize, std::vector<FILEINFO> & vecFileInfo);
+	void CreateDirectroy(const std::string & szPath);
+	int ProcessAccept(LISTENSOCKET * cxt);
 	int ProcessSendCtrl(CLIENTCONEXT * cxt);
-	int ProcessRecvCtrl(CLIENTCONEXT * cxt);
+	int ProcessSendFile(CLIENTCONEXT * cxt);
 	int ProcessRecvFile(CLIENTCONEXT * cxt);
 	int InitListenSocket(const char* pstrPort, UDTSOCKET & sockListen);
 	int CreateTCPSocket(SYSSOCKET & ssock, const char* pstrPort, bool bBind = false, bool rendezvous = false);
@@ -118,8 +135,9 @@ private:
 	CUDTCallBack * m_pCallBack;
 	std::vector<PLISTENSOCKET> VEC_LISTEN;
 	std::vector<PCLIENTCONEXT> VEC_CLIENT;
-	std::string m_szFileSavePath;
+
 	UDTSOCKET m_sockListen;
+
 	int m_nCtrlPort;
 	int m_nFilePort;
 	bool m_bListenStatus;

@@ -44,6 +44,12 @@ JNIEXPORT jint JNICALL Java_com_dragonflow_FileTransfer_startListen(JNIEnv* env,
 	return core->core()->StartListen(portCtrl, portFile);
 }
 
+JNIEXPORT jint JNICALL Java_com_dragonflow_FileTransfer_getListenStates(JNIEnv* env,  jclass clazz, jlong ptr)
+{
+	JNICore *core = reinterpret_cast<JNICore*>(ptr);
+	return core->core()->GetListenStates();
+}
+
 JNIEXPORT jint  JNICALL Java_com_dragonflow_FileTransfer_stopTransfer(JNIEnv *env, jclass clazz, jlong ptr, jint nType, jint sock)
 {
 	JNICore *core = reinterpret_cast<JNICore*>(ptr);
@@ -57,6 +63,14 @@ JNIEXPORT jint  JNICALL Java_com_dragonflow_FileTransfer_stopListen(JNIEnv *env,
 	core->core()->StopListen();
 	return 0;
 }
+
+JNIEXPORT jint  JNICALL Java_com_dragonflow_FileTransfer_restartListen(JNIEnv *env, jclass clazz, jlong ptr)
+{
+	JNICore *core = reinterpret_cast<JNICore*>(ptr);
+	core->core()->RestartListen();
+	return 0;
+}
+
 
 JNIEXPORT jstring  JNICALL Java_com_dragonflow_FileTransfer_Test(JNIEnv *env, jclass clazz, jlong ptr)
 {
