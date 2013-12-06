@@ -32,11 +32,11 @@ int CUdtCore::StartListen(const int nCtrlPort, const int nFilePort)
 {
 	UDT::startup();
 
-	if (m_bListenStatus)
-	{
-		m_pCallBack->onFinished("Port is in listening states!", 108, 0);
-		return 0;
-	}
+	//if (m_bListenStatus)
+	//{
+	//	m_pCallBack->onFinished("Port is in listening states!", 108, 0);
+	//	return 0;
+	//}
 
 	if (!VEC_LISTEN.empty())
 		VEC_LISTEN.clear();
@@ -87,10 +87,19 @@ int CUdtCore::StartListen(const int nCtrlPort, const int nFilePort)
 
 int CUdtCore::GetListenStates()
 {
-    if (UDT::getsockstate(m_sockListen) != LISTENING) {
-        return -1;
-    }
-    return 0;
+	int nRet = 0;
+	CGuard::enterCS(m_Lock);
+	for (vector<PLISTENSOCKET>::iterator iter = VEC_LISTEN.begin(); iter != VEC_LISTEN.end(); iter++)
+	{
+		if (UDT::getsockstate((*iter)->sockListen) != LISTENING)
+		{
+			nRet = -1;
+			break;
+		}
+	}
+	CGuard::leaveCS(m_Lock);
+
+    return nRet;
 }
 
 int CUdtCore::SendMsg(const char* pstrAddr, const char* pstrMsg, const char* pstrHostName)
@@ -244,7 +253,9 @@ void CUdtCore::ReplyAccept(const UDTSOCKET sock, const char* pstrReply)
 			}
 
 			if (UDT::ERROR == UDT::send(sock, (char*)Head, 3, 0))
-				return ;
+			{
+				break;
+			}
 			break;
 		}
 	}
@@ -266,7 +277,7 @@ void CUdtCore::StopTransfer(const UDTSOCKET sock, const int nType)
 				memset(Head, 0, 8);
 				memcpy(Head, "FRS", 3);
 				if (UDT::ERROR == UDT::send(sock, (char*)Head, 3, 0))
-					return ;
+					break;
 			}
 			else if ((*it)->Type == OP_SND_CTRL)
 			{
@@ -276,7 +287,7 @@ void CUdtCore::StopTransfer(const UDTSOCKET sock, const int nType)
 				else
 					memcpy(Head, "FSS", 3);
 				if (UDT::ERROR == UDT::send(sock, (char*)Head, 3, 0))
-					return ;
+					break;
 			}
 			break;
 		}
@@ -286,19 +297,23 @@ void CUdtCore::StopTransfer(const UDTSOCKET sock, const int nType)
 
 void CUdtCore::StopListen()
 {
+	CGuard::enterCS(m_Lock);
 	for (vector<PLISTENSOCKET>::iterator iter = VEC_LISTEN.begin(); iter != VEC_LISTEN.end(); iter++)
 	{
 		UDT::close((*iter)->sockListen);
 	}
+	CGuard::leaveCS(m_Lock);
 }
 
 void CUdtCore::RestartListen()
 {
+	CGuard::enterCS(m_Lock);
 	for (vector<PLISTENSOCKET>::iterator iter = VEC_LISTEN.begin(); iter != VEC_LISTEN.end(); iter++)
 	{
 		(*iter)->bRestartListen = true;
 		UDT::close((*iter)->sockListen);
 	}
+	CGuard::leaveCS(m_Lock);
 }
 
 
@@ -605,24 +620,50 @@ int CUdtCore::ProcessAccept(LISTENSOCKET * cxt)
 	// create USTSOCKET
 	if (!cxt->bListen)
 	{
-		if (CreateUDTSocket(cxt->sockListen, cxt->strServerPort.c_str(), true) < 0)
+		if (CreateUDTSocket(cxt->sockListen, cxt->strServerPort.c_str(), true) == 0)
 		{
-			m_pCallBack->onFinished("Fail create socket!", 108, 0);
-			return 1;
+			// listen socket
+			if (UDT::ERROR == UDT::listen(cxt->sockListen, 10))
+			{
+				sleep(8);
+				if (CreateUDTSocket(cxt->sockListen, cxt->strServerPort.c_str(), true) == 0)
+				{
+					// listen socket
+					if (UDT::ERROR == UDT::listen(cxt->sockListen, 10))
+					{
+						m_pCallBack->onFinished("Fail listen socket!", 108, 0);
+						return 1;
+					}
+					cxt->bListen = true;
+				}
+				else
+				{
+					m_pCallBack->onFinished("Fail listen socket!", 108, 0);
+					return 1;
+				}
+			}
+			cxt->bListen = true;
 		}
-		// listen socket
-		if (UDT::ERROR == UDT::listen(cxt->sockListen, 10))
+		else
 		{
-			m_pCallBack->onFinished("Fail listen socket!", 108, 0);
-			return 1;
-		}
-		cxt->bListen = true;
-		if (cxt->Type == OP_RCV_CTRL)
-		{
-			m_sockListen = cxt->sockListen;
+			sleep(8);
+			if (CreateUDTSocket(cxt->sockListen, cxt->strServerPort.c_str(), true) == 0)
+			{
+				// listen socket
+				if (UDT::ERROR == UDT::listen(cxt->sockListen, 10))
+				{
+					m_pCallBack->onFinished("Fail listen socket!", 108, 0);
+					return 1;
+				}
+				cxt->bListen = true;
+			}
+			else
+			{
+				m_pCallBack->onFinished("Fail listen socket!", 108, 0);
+				return 1;
+			}
 		}
 	}
-
 	//log << "Successful listening port: " << cxt->strServerPort << endl;
 
 	// accept port
@@ -678,6 +719,7 @@ int CUdtCore::ProcessAccept(LISTENSOCKET * cxt)
 
 	//log << "log close" << endl;
 	//log.close();
+	return 0;
 }
 
 
@@ -1445,6 +1487,53 @@ DWORD WINAPI CUdtCore::_ListenThreadProc(LPVOID pParam)
 
 	while (true)
 	{
+		/*if (!cxt->bListen)
+		{
+			if (cxt->pThis->CreateUDTSocket(cxt->sockListen, cxt->strServerPort.c_str(), true) == 0)
+			{
+				// listen socket
+				if (UDT::ERROR == UDT::listen(cxt->sockListen, 10))
+				{
+					sleep(8);
+					if (cxt->pThis->CreateUDTSocket(cxt->sockListen, cxt->strServerPort.c_str(), true) == 0)
+					{
+						// listen socket
+						if (UDT::ERROR == UDT::listen(cxt->sockListen, 10))
+						{
+							cxt->pThis->m_pCallBack->onFinished("Fail listen socket!", 108, 0);
+							break;
+						}
+						cxt->bListen = true;
+					}
+					else
+					{
+						cxt->pThis->m_pCallBack->onFinished("Fail listen socket!", 108, 0);
+						break;
+					}
+				}
+				cxt->bListen = true;
+			}
+			else
+			{
+				sleep(8);
+				if (cxt->pThis->CreateUDTSocket(cxt->sockListen, cxt->strServerPort.c_str(), true) == 0)
+				{
+					// listen socket
+					if (UDT::ERROR == UDT::listen(cxt->sockListen, 10))
+					{
+						cxt->pThis->m_pCallBack->onFinished("Fail listen socket!", 108, 0);
+						break;
+					}
+					cxt->bListen = true;
+				}
+				else
+				{
+					cxt->pThis->m_pCallBack->onFinished("Fail listen socket!", 108, 0);
+					break;
+				}
+			}
+		}*/
+
 		if (cxt->pThis->ProcessAccept(cxt) == 0)
 		{
 			int nStamp = 0;

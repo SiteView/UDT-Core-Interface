@@ -52,7 +52,7 @@ public class MainActivity extends Activity implements FileTransfer.Callback{
         	public void onClick(View arg0) {
         		// 发送单个文件
                 strAddr = Text_ip.getText().toString();
-                mCore.SendFiles(strAddr, new Object[]{"//mnt//sdcard//NetgearGenie//01.jpg"}, "HTC G18", "ANDROID", "zhujianwen", "WIN7", "GENIETURBO");
+                mCore.SendFiles(strAddr, new Object[]{"//mnt//sdcard//NetgearGenie//Send//隧道.jpg"}, "HTC G18", "ANDROID", "zhujianwen", "WIN7", "GENIETURBO");
 			}});
         
         bt3.setOnClickListener(new OnClickListener() {
@@ -60,7 +60,7 @@ public class MainActivity extends Activity implements FileTransfer.Callback{
         	public void onClick(View arg0) {
         		// 发送多个文件
         		strAddr = Text_ip.getText().toString();
-        		mCore.SendFiles(strAddr, new Object[]{"//mnt//sdcard//NetgearGenie//01.jpg", "//mnt//sdcard//NetgearGenie//02.jpg", "//mnt//sdcard//NetgearGenie//03.jpg"}, "HTC G18", "ANDROID", "zhujianwen", "WIN7", "GENIETURBO");
+        		mCore.SendFiles(strAddr, new Object[]{"//mnt//sdcard//NetgearGenie//Send//01.jpg", "//mnt//sdcard//NetgearGenie//Send//02.jpg", "//mnt//sdcard//NetgearGenie//Send//03.jpg"}, "HTC G18", "ANDROID", "zhujianwen", "WIN7", "GENIETURBO");
 			}});
         
         bt4.setOnClickListener(new OnClickListener() {
@@ -69,7 +69,7 @@ public class MainActivity extends Activity implements FileTransfer.Callback{
         		// 发送文件夹
         		strAddr = Text_ip.getText().toString();
    
-        		mCore.SendFiles(strAddr, new Object[]{"//mnt//sdcard//Download"}, "HTC G18", "ANDROID", "zhujianwen", "WIN7", "GENIETURBO");
+        		mCore.SendFiles(strAddr, new Object[]{"//mnt//sdcard//NetgearGenie//Send"}, "HTC G18", "ANDROID", "zhujianwen", "WIN7", "GENIETURBO");
 			}});
         
         bt5.setOnClickListener(new OnClickListener() {
@@ -87,13 +87,15 @@ public class MainActivity extends Activity implements FileTransfer.Callback{
         bt7.setOnClickListener(new OnClickListener() {
         	@Override
         	public void onClick(View arg0) {
-        		mCore.StopTransfer(1);
+        		//mCore.StopTransfer(1);
+        		mCore.GetListenStates();
 			}});
         
         bt8.setOnClickListener(new OnClickListener() {
         	@Override
         	public void onClick(View arg0) {
-        		mCore.StopListen();
+        		//mCore.StopListen();
+        		mCore.RestartListen();
 			}});
         
     
@@ -122,7 +124,6 @@ public class MainActivity extends Activity implements FileTransfer.Callback{
 	{
 		szTmp = "Recv msg:" + szMsg;
 		handler.sendEmptyMessage(1);
-//		Text_info.setText(szTmp);
 	}
 
 	@Override

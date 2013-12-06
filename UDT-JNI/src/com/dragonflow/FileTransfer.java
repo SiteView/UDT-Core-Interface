@@ -18,37 +18,55 @@ public class FileTransfer {
 		mCallback = callback;
 		mCore = init(this);
 	}
+	
 	public void StartListen(int portctrl, int portfile)
 	{
 		if (startListen(mCore, portctrl, portfile) == 0)
 		{
-			System.out.println("------startListen success:" + portctrl + "--" + portfile);
+			System.out.println("---zhjw---startListen success:" + portctrl + "--" + portfile);
 		}
-		
 	}
+	
+	public void GetListenStates()
+	{
+		if (getListenStates(mCore) != 0)
+		{
+			System.out.println("---zhjw---gettListenStates faild ");
+		}
+	}
+	
 	public void SendMessage(String address, String message, String hostname){
 		sendMessage(mCore, address, message, hostname);
 	}
-	public void SendFiles(String host, Object[] filelist, String owndevice, String owntype, String recdevice, String rectype, String sendtype){
-		sock = sendFiles(mCore, host, filelist, owndevice, owntype, recdevice, rectype, sendtype);
+	public void SendFiles(String host, Object[] filelist, String owndevice, String owntype, String recdevice, String rectype, String sendtype)
+	{
+		mSock = sendFiles(mCore, host, filelist, owndevice, owntype, recdevice, rectype, sendtype);
 	}
+	
 	public void ReplyAccept(String strReply)
 	{
-		replyAccept(mCore, strReply, 0);
+		replyAccept(mCore, strReply, mSock);
 	}
+	
 	public void StopTransfer(int nType)
 	{
-		stopTransfer(mCore, nType, sock);
+		stopTransfer(mCore, nType, mSock);
 	}
+	
 	public void StopListen()
 	{
 		stopListen(mCore);
 	}
 	
+	public void RestartListen()
+	{
+		restartListen(mCore);
+	}
+	
 	public void TestString()
 	{
 		String str = Test(mCore);
-		System.out.println("------onAccept:" + str);
+		System.out.println("---zhjw---onAccept:" + str);
 	}
 	
 	
@@ -66,17 +84,19 @@ public class FileTransfer {
 	 */
     public void onAccept(String host,String filename,int filecount, long fileSize, String recdevice,String rectype,String owndevice,String owntype,String sendtype, String fileType, int sock)
     {
-    	System.out.println("------onAccept:" + host + ":" + filename);
+    	System.out.println("---zhjw---onAccept:" + host + ":" + filename);
+    	mSock = sock;
     	if (filecount == 1 && fileType.equals("F"))
     	{
     		String filePath = "//mnt//sdcard//NetgearGenie//" + filename;
-    		replyAccept(mCore, filePath, sock);
+    		replyAccept(mCore, filePath, mSock);
     	}
     	else
     	{
     		String filePath = "//mnt//sdcard//NetgearGenie//";
-    		replyAccept(mCore, filePath, sock);
+    		replyAccept(mCore, filePath, mSock);
     	}
+    	
 		//FileTransfer.this.hook_onAccept(host, DeviceName, SendType, filename, count);
     }
 	void hook_onAccept(String host, String DeviceName, String SendType, String filename, int count)
@@ -94,7 +114,7 @@ public class FileTransfer {
      */
     public void onAcceptonFinish(String host, String filename, int Type, int sock)
     {
-    	System.out.println("------onAccept:" + host + ":" + filename);
+    	System.out.println("---zhjw---onAccept:" + host + ":" + filename);
     	//FileTransfer.this.hook_onAcceptonFinish(host, fileNameList);
     }
     void hook_onAcceptonFinish(String host, Object[] fileNameList)
@@ -109,7 +129,7 @@ public class FileTransfer {
      */
     public void onFinished(String msg, int type)
     {
-    	System.out.println("------onFinished:" + msg);
+    	System.out.println("---zhjw---onFinished:" + msg);
     	//FileTransfer.this.hook_onFinished(msg);
     }
     void hook_onFinished(String msg)
@@ -131,7 +151,7 @@ public class FileTransfer {
      */
     public void onTransfer(long sum, long current, double iProgress, String filename, int type , int sock)
     {
-    	System.out.println("------onTransfer:" + sum + ":" + current);
+    	System.out.println("---zhjw---onTransfer:" + sum + ":" + current);
     	FileTransfer.this.hook_onTransfer(sum, current, filename, type);
     }
     void hook_onTransfer(long sum,long current,String filename, int type)
@@ -151,14 +171,14 @@ public class FileTransfer {
      */
     public void onRecvMessage(String msg, String host, String hostname)
     {
-    	System.out.println("------onRecvMessage:" + host + ":" + msg);
-    	//FileTransfer.this.hook_onRecvMessage(host, hostname, msg);
+    	System.out.println("---zhjw---onRecvMessage:" + host + ":" + msg);
+    	FileTransfer.this.hook_onRecvMessage(host, hostname, msg);
     }
     void hook_onRecvMessage(String szIpAddr, String szHostName, String szMsg)
     {
-		//if (mCallback != null) {
-		//	mCallback.onRecvMessage(szIpAddr, szHostName, szMsg);
-		//}
+		if (mCallback != null) {
+			mCallback.onRecvMessage(szIpAddr, szHostName, szMsg);
+		}
     }
     
 	/**
@@ -193,11 +213,25 @@ public class FileTransfer {
 	private static native int startListen(long core, int portctrl, int portfile);
 	
     /**
+     * 获取监听状态
+     * @param core 底层库的对象
+     * @return
+     */
+	private static native int getListenStates(long core);
+	
+    /**
      * 停止接受文件传送
      * @param core 底层库的对象
      * @return
      */
 	private static native int stopListen(long core);
+	
+    /**
+     * 重新监听服务
+     * @param core 底层库的对象
+     * @return
+     */
+	private static native int restartListen(long core);
 	
 	   /**
 	    * 发送消息 
@@ -253,7 +287,7 @@ public class FileTransfer {
 	boolean mStarted = false;
 	Handler mDisp = new Handler();
 	long mCore = 0;
-	int sock = 0;
+	int mSock = 0;
 	private String receiveFolder;
 	private String response;
 
