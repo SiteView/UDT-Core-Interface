@@ -1,0 +1,603 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="源文件\base64">
+      <UniqueIdentifier>{db053c5a-38c8-46c2-b498-c74e1fd730b6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\bfcp">
+      <UniqueIdentifier>{a3d9e0b3-f852-4077-a4e8-fa6b719fcafc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\conf">
+      <UniqueIdentifier>{380cbb79-e402-4800-9d68-ab45e2b2cf9a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\crc32">
+      <UniqueIdentifier>{0d41940f-0a57-4d75-823a-b01432c20034}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\dbg">
+      <UniqueIdentifier>{6e9f7312-1617-4e21-a9e6-6d30ca5755d9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\dns">
+      <UniqueIdentifier>{bd1b0aa9-1435-4252-9a2a-ef91c81180c1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\fmt">
+      <UniqueIdentifier>{2f7aef15-306d-4d72-bde5-f23ad2c99627}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\hash">
+      <UniqueIdentifier>{8b5b474b-6ff4-41a7-adf6-bef1570cc2bf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\hmac">
+      <UniqueIdentifier>{4e4cb193-ae5b-48f5-ae2f-f1d9dfde3917}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\httpauth">
+      <UniqueIdentifier>{12c7be45-7884-454f-a37b-1206f2aa8395}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\ice">
+      <UniqueIdentifier>{8d75016f-9bd8-4770-bd6f-4e0fee656017}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\jbuf">
+      <UniqueIdentifier>{0b7c8581-43f7-4d9c-bf3a-03312c24274e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\list">
+      <UniqueIdentifier>{3aed6de0-24ab-4b14-8e09-267c664a5a13}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\lock">
+      <UniqueIdentifier>{604547f4-7889-4029-bef2-4c7241297f55}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\main">
+      <UniqueIdentifier>{6b66cfbc-7f6a-4927-a3ba-f612946802cd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\mbuf">
+      <UniqueIdentifier>{71810fec-f39d-41e6-91a0-b11d03aa5807}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\md5">
+      <UniqueIdentifier>{9be51f02-c498-47c0-8bae-90efdd86d87d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\mem">
+      <UniqueIdentifier>{b27ae6d7-5af2-44f9-a14c-f39260c45136}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\mod">
+      <UniqueIdentifier>{66d89c47-3a0c-4ade-b54a-5b238bee9aba}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\natbd">
+      <UniqueIdentifier>{b92fe95d-ca78-4dca-bd10-78607a64d07e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\net">
+      <UniqueIdentifier>{946d321e-d755-437e-a21a-e444caeeb965}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\rtp">
+      <UniqueIdentifier>{cc582ca6-5e51-48d1-afae-39508c3b3833}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\sa">
+      <UniqueIdentifier>{8401db05-0350-4bec-b65f-ab759bb1cd40}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\sdp">
+      <UniqueIdentifier>{0effc9a0-7cc0-4a3b-960c-97734097d53f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\sha">
+      <UniqueIdentifier>{0a58222d-dbfb-457b-8d6c-4936ab9ed6c3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\sip">
+      <UniqueIdentifier>{86b22ab4-d8b0-41bc-969b-071e4d25ba9a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\sipevent">
+      <UniqueIdentifier>{859c9ad7-dd60-4455-8726-0b0c618cb09c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\sipreg">
+      <UniqueIdentifier>{c3752b11-e3ef-4e3f-810b-4fbd66ffdc53}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\sipsess">
+      <UniqueIdentifier>{b419f36c-927b-4bea-af67-1b880a48a852}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\stun">
+      <UniqueIdentifier>{d46da641-10b4-41f9-93d8-81b74a15e389}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\sys">
+      <UniqueIdentifier>{5eea4ac0-d1af-454e-971b-a8272d8acda2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\tcp">
+      <UniqueIdentifier>{c334fb73-048b-4111-98d2-5f49173f5c40}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\telev">
+      <UniqueIdentifier>{6923ee82-3040-4ef0-a9e1-5751f5985aaa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\tmr">
+      <UniqueIdentifier>{d08176ac-1f2a-4946-b96a-4415e1441127}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\turn">
+      <UniqueIdentifier>{4ede169c-1946-41fd-8bf2-1d608813f999}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\udp">
+      <UniqueIdentifier>{523f1444-97f2-4faa-bd32-c5e9f44a6b7b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\uri">
+      <UniqueIdentifier>{bfe3c14c-c108-41f4-a288-077bae2eac74}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\p2p">
+      <UniqueIdentifier>{399f5855-c50c-4862-b8d6-4a60395a428e}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\base64\b64.c">
+      <Filter>源文件\base64</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\bfcp\attr.c">
+      <Filter>源文件\bfcp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\bfcp\conn.c">
+      <Filter>源文件\bfcp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\bfcp\msg.c">
+      <Filter>源文件\bfcp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\bfcp\reply.c">
+      <Filter>源文件\bfcp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\bfcp\request.c">
+      <Filter>源文件\bfcp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\conf\conf.c">
+      <Filter>源文件\conf</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\crc32\crc32.c">
+      <Filter>源文件\crc32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dbg\dbg.c">
+      <Filter>源文件\dbg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dns\client.c">
+      <Filter>源文件\dns</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dns\cstr.c">
+      <Filter>源文件\dns</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dns\dname.c">
+      <Filter>源文件\dns</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dns\hdr.c">
+      <Filter>源文件\dns</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dns\ns.c">
+      <Filter>源文件\dns</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dns\rr.c">
+      <Filter>源文件\dns</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dns\rrlist.c">
+      <Filter>源文件\dns</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dns\win32\srv.c">
+      <Filter>源文件\dns</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\fmt\ch.c">
+      <Filter>源文件\fmt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\fmt\pl.c">
+      <Filter>源文件\fmt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\fmt\print.c">
+      <Filter>源文件\fmt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\fmt\prm.c">
+      <Filter>源文件\fmt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\fmt\regex.c">
+      <Filter>源文件\fmt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\fmt\str.c">
+      <Filter>源文件\fmt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\fmt\str_error.c">
+      <Filter>源文件\fmt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\fmt\time.c">
+      <Filter>源文件\fmt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\hash\func.c">
+      <Filter>源文件\hash</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\hash\hash.c">
+      <Filter>源文件\hash</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\hmac\hmac_sha1.c">
+      <Filter>源文件\hmac</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\httpauth\basic.c">
+      <Filter>源文件\httpauth</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\httpauth\digest.c">
+      <Filter>源文件\httpauth</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ice\cand.c">
+      <Filter>源文件\ice</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ice\candpair.c">
+      <Filter>源文件\ice</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ice\chklist.c">
+      <Filter>源文件\ice</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ice\comp.c">
+      <Filter>源文件\ice</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ice\connchk.c">
+      <Filter>源文件\ice</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ice\gather.c">
+      <Filter>源文件\ice</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ice\ice.c">
+      <Filter>源文件\ice</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ice\icem.c">
+      <Filter>源文件\ice</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ice\icesdp.c">
+      <Filter>源文件\ice</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ice\icestr.c">
+      <Filter>源文件\ice</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ice\stunsrv.c">
+      <Filter>源文件\ice</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ice\util.c">
+      <Filter>源文件\ice</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\jbuf\jbuf.c">
+      <Filter>源文件\jbuf</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\list\list.c">
+      <Filter>源文件\list</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\lock\lock.c">
+      <Filter>源文件\lock</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\main\init.c">
+      <Filter>源文件\main</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\main\main.c">
+      <Filter>源文件\main</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\main\method.c">
+      <Filter>源文件\main</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\mbuf\mbuf.c">
+      <Filter>源文件\mbuf</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\md5\md5.c">
+      <Filter>源文件\md5</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\md5\wrap.c">
+      <Filter>源文件\md5</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\mem\mem.c">
+      <Filter>源文件\mem</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\mod\mod.c">
+      <Filter>源文件\mod</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\mod\win32\dll.c">
+      <Filter>源文件\mod</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\natbd\filtering.c">
+      <Filter>源文件\natbd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\natbd\genalg.c">
+      <Filter>源文件\natbd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\natbd\hairpinning.c">
+      <Filter>源文件\natbd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\natbd\lifetime.c">
+      <Filter>源文件\natbd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\natbd\mapping.c">
+      <Filter>源文件\natbd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\natbd\natstr.c">
+      <Filter>源文件\natbd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\net\if.c">
+      <Filter>源文件\net</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\net\net.c">
+      <Filter>源文件\net</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\net\netstr.c">
+      <Filter>源文件\net</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\net\rt.c">
+      <Filter>源文件\net</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\net\sock.c">
+      <Filter>源文件\net</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\net\sockopt.c">
+      <Filter>源文件\net</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\net\win32\wif.c">
+      <Filter>源文件\net</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\uri\ucmp.c">
+      <Filter>源文件\uri</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\uri\uri.c">
+      <Filter>源文件\uri</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\uri\uric.c">
+      <Filter>源文件\uri</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\udp\udp.c">
+      <Filter>源文件\udp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\turn\chan.c">
+      <Filter>源文件\turn</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\turn\perm.c">
+      <Filter>源文件\turn</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\turn\turnc.c">
+      <Filter>源文件\turn</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\tmr\tmr.c">
+      <Filter>源文件\tmr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\telev\telev.c">
+      <Filter>源文件\telev</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\tcp\tcp.c">
+      <Filter>源文件\tcp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\tcp\tcp_high.c">
+      <Filter>源文件\tcp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sys\daemon.c">
+      <Filter>源文件\sys</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sys\endian.c">
+      <Filter>源文件\sys</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sys\fs.c">
+      <Filter>源文件\sys</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sys\rand.c">
+      <Filter>源文件\sys</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sys\sleep.c">
+      <Filter>源文件\sys</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sys\sys.c">
+      <Filter>源文件\sys</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\stun\addr.c">
+      <Filter>源文件\stun</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\stun\attr.c">
+      <Filter>源文件\stun</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\stun\ctrans.c">
+      <Filter>源文件\stun</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\stun\dnsdisc.c">
+      <Filter>源文件\stun</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\stun\hdr.c">
+      <Filter>源文件\stun</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\stun\ind.c">
+      <Filter>源文件\stun</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\stun\keepalive.c">
+      <Filter>源文件\stun</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\stun\msg.c">
+      <Filter>源文件\stun</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\stun\rep.c">
+      <Filter>源文件\stun</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\stun\req.c">
+      <Filter>源文件\stun</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\stun\stun.c">
+      <Filter>源文件\stun</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\stun\stunstr.c">
+      <Filter>源文件\stun</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sipsess\accept.c">
+      <Filter>源文件\sipsess</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sipsess\ack.c">
+      <Filter>源文件\sipsess</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sipsess\close.c">
+      <Filter>源文件\sipsess</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sipsess\connect.c">
+      <Filter>源文件\sipsess</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sipsess\info.c">
+      <Filter>源文件\sipsess</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sipsess\listen.c">
+      <Filter>源文件\sipsess</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sipsess\modify.c">
+      <Filter>源文件\sipsess</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sipsess\reply.c">
+      <Filter>源文件\sipsess</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sipsess\request.c">
+      <Filter>源文件\sipsess</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sipsess\sess.c">
+      <Filter>源文件\sipsess</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sipreg\reg.c">
+      <Filter>源文件\sipreg</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sipevent\listen.c">
+      <Filter>源文件\sipevent</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sipevent\msg.c">
+      <Filter>源文件\sipevent</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sipevent\notify.c">
+      <Filter>源文件\sipevent</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sipevent\subscribe.c">
+      <Filter>源文件\sipevent</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sip\addr.c">
+      <Filter>源文件\sip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sip\auth.c">
+      <Filter>源文件\sip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sip\cseq.c">
+      <Filter>源文件\sip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sip\ctrans.c">
+      <Filter>源文件\sip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sip\dialog.c">
+      <Filter>源文件\sip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sip\keepalive.c">
+      <Filter>源文件\sip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sip\keepalive_udp.c">
+      <Filter>源文件\sip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sip\msg.c">
+      <Filter>源文件\sip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sip\param.c">
+      <Filter>源文件\sip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sip\reply.c">
+      <Filter>源文件\sip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sip\request.c">
+      <Filter>源文件\sip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sip\sip.c">
+      <Filter>源文件\sip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sip\strans.c">
+      <Filter>源文件\sip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sip\transp.c">
+      <Filter>源文件\sip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sip\via.c">
+      <Filter>源文件\sip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sha\sha1.c">
+      <Filter>源文件\sha</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sdp\attr.c">
+      <Filter>源文件\sdp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sdp\format.c">
+      <Filter>源文件\sdp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sdp\media.c">
+      <Filter>源文件\sdp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sdp\msg.c">
+      <Filter>源文件\sdp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sdp\session.c">
+      <Filter>源文件\sdp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sdp\str.c">
+      <Filter>源文件\sdp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sa\ntop.c">
+      <Filter>源文件\sa</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sa\printaddr.c">
+      <Filter>源文件\sa</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sa\pton.c">
+      <Filter>源文件\sa</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sa\sa.c">
+      <Filter>源文件\sa</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rtp\fb.c">
+      <Filter>源文件\rtp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rtp\member.c">
+      <Filter>源文件\rtp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rtp\ntp.c">
+      <Filter>源文件\rtp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rtp\pkt.c">
+      <Filter>源文件\rtp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rtp\rr.c">
+      <Filter>源文件\rtp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rtp\rtcp.c">
+      <Filter>源文件\rtp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rtp\rtp.c">
+      <Filter>源文件\rtp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rtp\sdes.c">
+      <Filter>源文件\rtp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rtp\sess.c">
+      <Filter>源文件\rtp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rtp\source.c">
+      <Filter>源文件\rtp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\p2p\p2p.cpp">
+      <Filter>源文件\p2p</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\p2p\common.cpp">
+      <Filter>源文件\p2p</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\p2p\md5.cpp">
+      <Filter>源文件\p2p</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\src\main\main.h">
+      <Filter>源文件\main</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\mod\mod_internal.h">
+      <Filter>源文件\mod</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\md5\md5.h">
+      <Filter>源文件\md5</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\p2p\p2p.h">
+      <Filter>源文件\p2p</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\p2p\common.h">
+      <Filter>源文件\p2p</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\p2p\md5.h">
+      <Filter>源文件\p2p</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
