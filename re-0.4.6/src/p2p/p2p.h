@@ -1,43 +1,70 @@
-#ifndef _P2P_H_
-#define _P2P_H_
+#ifndef __P2P_H__
+#define __P2P_H__
 
-#include <re_types.h>
-#include <re_mem.h>
-#include <re_list.h>
-#include <re_fmt.h>
-#include <re_mbuf.h>
-#include <re_sa.h>
-#include <re_net.h>
-#include <re_tcp.h>
-#include <re_udp.h>
-#include <re_ice.h>
-#include <re_main.h>
-#include <re_p2p.h>
+#include "udt.h"
+#include "core.h"
+#include "queue.h"
+#include "packet.h"
+#include "cache.h"
+#include "epoll.h"
 
-#include <fstream>
-#include <string>
-#include <map>
-#include <vector>
 
-#include "common.h"
+#define UNUSED(x) (void)x 
 
 #define USERNAME_SIZE 512
 #define PASSWD_SIZE 512
 #define P2P_KEY_SIZE 64
 
-struct ice;
-struct udp_sock;
-struct sa;
-struct tcp_conn;
-struct p2p_handle;
-struct p2p_connection;
+enum
+{
+	P2P_LOGINREQ = 1,
+	P2P_LOGINREP,
+	P2P_CONNREQ,
+	P2P_CONNREP,
+	P2P_DATA
+};
 
-typedef void (p2p_init_h)(int err, struct p2p_handle* p2p);
-typedef void (p2p_connect_h)(int err,const char* reason, void* arg);
-typedef void (p2p_receive_h)(const char* data, uint32_t len, void *arg);
-typedef void (p2p_request_h)(struct p2p_handle* p2p, const char* peername, struct p2p_connection **ppconn);
+const uint16_t p2pflag = 0xc000;
 
-struct p2p_handle
+enum
+{
+	P2P_INIT = 1,
+	P2P_ACCEPT,
+	P2P_CONNECTING,
+	P2P_CONNECTED,
+	P2P_CONNECTERR
+};
+struct p2phandle;
+struct p2pconnection;
+
+typedef void (p2p_init_h)(int err, struct p2phandle* p2p);
+//typedef void (p2p_connect_h)(int err,const char* reason, void* arg);
+typedef void (p2p_connect_h)(int err,const char* reason, struct p2pconnection* p2pcon);
+//typedef void (p2p_receive_h)(const char* data, uint32_t len, void *arg);
+typedef void (p2p_receive_h)(const char* data, uint32_t len, struct p2pconnection* p2pcon);
+typedef void (p2p_request_h)(struct p2phandle* p2p, const char* peername, struct p2pconnection **ppconn);
+
+
+//////////////////////////////////////////////////////////////////////////
+// libre callback
+void p2p_init_handler(int err, struct p2phandle* p2p);
+//void p2p_receive_handler(const char* data, uint32_t len, void *arg);
+void p2p_receive_handler(const char* data, uint32_t len, struct p2pconnection* p2pcon);
+void p2p_request_handler(struct p2phandle *p2p, const char* peername, struct p2pconnection **ppconn);
+void p2p_connect_handler(int err, const char* reason, struct p2pconnection* pcon);
+void tcp_recv_handler(struct mbuf *mb, void* arg);
+void udp_recv_handler(const struct sa *src, struct mbuf *mb, void *arg);
+void tcp_close_handler(int err, void *arg);
+int p2p_request(struct p2pconnection *pconn, const char* myname, const char* peername);
+int p2p_response(struct p2pconnection *pconn, const char* peername);
+int p2p_accept(struct p2phandle* p2p, struct p2pconnection** ppconn, const char* peername,
+	p2p_receive_h *receiveh, void *arg);
+
+void gather_handler(int err, uint16_t scode, const char* reason,void *arg);
+void connchk_handler(int err, bool update, void *arg);
+
+
+struct p2phandle
 {
 	struct tcp_conn *ltcp; /* control tcp socket */
 	char *username;
@@ -49,16 +76,16 @@ struct p2p_handle
 	p2p_request_h *requesth;
 	p2p_init_h *inith;
 	uint16_t status;
-	P2PSOCKET psock;
+	UDTSOCKET usock;
 };
 
 
-struct p2p_connection
+struct p2pconnection
 {
 	struct le le;
 	char *peername;
 	struct ice *ice;
-	struct p2p_handle *p2ph;
+	struct p2phandle *p2p;
 	struct udp_sock *ulsock;
 	uint16_t status;
 	p2p_connect_h *ch;
@@ -66,103 +93,83 @@ struct p2p_connection
 	void *arg;
 };
 
+class CUDT;
 
-class CP2P
+class CUDTSocket
 {
-	friend class CP2PSocket;
-	friend class CP2PUnited;
+public:
+	CUDTSocket();
+	~CUDTSocket();
+
+	UDTSTATUS m_Status;                       // current socket state
+
+	uint64_t m_TimeStamp;                     // time when the socket is closed
+
+	int m_iIPversion;                         // IP version
+	sockaddr* m_pSelfAddr;                    // pointer to the local address of the socket
+	sockaddr* m_pPeerAddr;                    // pointer to the peer address of the socket
+
+	UDTSOCKET m_SocketID;                     // socket ID
+	UDTSOCKET m_ListenSocket;                 // ID of the listener socket; 0 means this is an independent socket
+
+	UDTSOCKET m_PeerID;                       // peer socket ID
+	int32_t m_iISN;                           // initial sequence number, used to tell different connection from same IP:port
+
+	CUDT* m_pUDT;                             // pointer to the UDT entity
+
+	std::set<UDTSOCKET>* m_pQueuedSockets;    // set of connections waiting for accept()
+	std::set<UDTSOCKET>* m_pAcceptSockets;    // set of accept()ed connections
+
+	pthread_cond_t m_AcceptCond;              // used to block "accept" call
+	pthread_mutex_t m_AcceptLock;             // mutex associated to m_AcceptCond
+
+	unsigned int m_uiBackLog;                 // maximum number of connections in queue
+
+	int m_iMuxID;                             // multiplexer ID
+
+	pthread_mutex_t m_ControlLock;            // lock this socket exclusively for control APIs: bind/listen/connect
+
+private:
+	CUDTSocket(const CUDTSocket&);
+	CUDTSocket& operator=(const CUDTSocket&);
+};
+
+class CUDTUnited
+{
+	friend class CUDT;
 	friend class CRendezvousQueue;
-	friend class CSndQueue;
-	friend class CRcvQueue;
-	friend class CSndUList;
-	friend class CRcvUList;
-private:
-	CP2P();
-	CP2P(const CP2P & other);
-	const CP2P& operator=(const CP2P& other) {return * this;}
-	~CP2P();
 
 public:
-	static int p2p_init(const char* ctlserv, const int ctlport, const char* stunsrv, const int stunport, const char* username, const char* passwd, p2p_init_h *inith, p2p_request_h *requesth);
-	static int p2p_run();
-	static P2PSOCKET newSocket();
-	static int send(const P2PSOCKET u, const char* buf, int size, int flags);
-	static int recv(const P2PSOCKET u, const char* buf, int size, int flags);
-	static uint64_t sendfile(const P2PSOCKET u, const char* path, uint64_t* offset, int64_t size, int block = 364000);
-	static uint64_t recvfile(const P2PSOCKET u, const char* path, uint64_t* offset, int64_t size, int block = 7280000);
-
-private:
-	int send(const char* data, int size);
-	int recv(char* data, int size);
-	uint64_t sendfile(const char* path, uint64_t* offset, int64_t size, int block = 364000);
-	uint64_t recvfile(const char* path, uint64_t* offset, int64_t size, int block = 7280000);
-
-private:
-	static CP2PUnited s_P2PUnited;
-
-private: // synchronization: mutexes and conditions
-	pthread_mutex_t m_ConnectionLock;            // used to synchronize connection operation
-
-	pthread_cond_t m_SendBlockCond;              // used to block "send" call
-	pthread_mutex_t m_SendBlockLock;             // lock associated to m_SendBlockCond
-
-	pthread_mutex_t m_AckLock;                   // used to protected sender's loss list when processing ACK
-
-	pthread_cond_t m_RecvDataCond;               // used to block "recv" when there is no data
-	pthread_mutex_t m_RecvDataLock;              // lock associated to m_RecvDataCond
-
-	pthread_mutex_t m_SendLock;                  // used to synchronize "send" call
-	pthread_mutex_t m_RecvLock;                  // used to synchronize "recv" call
-
-	void initSynch();
-	void destroySynch();
-	void releaseSynch();
-};
-
-
-class CP2PSocket
-{
-public:
-	CP2PSocket();
-	~CP2PSocket();
-
-	P2PSOCKET m_SocketID;
-	CP2P* m_pP2P;
-
-private:
-	CP2PSocket(const CP2PSocket& other);
-	const CP2PSocket& operator=(const CP2PSocket& other);
-};
-
-class CP2PUnited
-{
-	friend class CP2P;
-public:
-	CP2PUnited();
-	~CP2PUnited();
+	CUDTUnited();
+	~CUDTUnited();
 
 public:
-	int p2p_init(const char* ctlserv, const int ctlport, const char* stunsrv, const int stunport, const char* username, const char* passwd, p2p_init_h *inith, p2p_request_h *requesth);
+	int p2p_init(const char* ctlip, const uint16_t ctlport, 
+		const char* stunip, const uint16_t stunport,
+		const char* name, const char* passwd, 
+		p2p_init_h* inith, p2p_request_h* requesth);
 	int p2p_run();
-	P2PSOCKET newSocket();
-	CP2P* lookup(const P2PSOCKET u);
+	int p2p_connect(const char* peername);
+	int p2p_accept();
+	int p2p_send(const char* peername, const char* buf, int len);
+	int p2p_disconnect(const char* peername);
+	int p2p_close();
+
+	int bind(const UDTSOCKET u, const UDPSOCKET* udpsaock, const sockaddr* name, int namelen);
+	int listen(const UDTSOCKET u, int backlog);
+	UDTSOCKET newSocket(int af, int type);
+	int newConnection(const UDTSOCKET listen, const sockaddr* peer, CHandShake* hs);
+	int connect(const UDTSOCKET u, const sockaddr* name, int namelen);
+	int postRecv(UDTSOCKET u, const char* buf, uint32_t len);
+	CUDT* lookup(const UDTSOCKET u);
+	UDTSTATUS getStatus(const UDTSOCKET u);
 
 private:
-	std::map<P2PSOCKET, CP2PSocket*> VECP2P;
-	P2PSOCKET m_SocketID;
-	pthread_mutex_t m_ControlLock;                    // used to synchronize UDT API
-	pthread_mutex_t m_IDLock;                         // used to synchronize ID generation
-	std::map<int64_t, std::set<P2PSOCKET> > m_PeerRec;// record sockets from peers to avoid repeated connection request, int64_t = (socker_id << 30) + isn
-
-private:
-	pthread_key_t m_TLSError;                         // thread local error record (last error)
-#ifndef WIN32
-	static void TLSDestroy(void* e) {if (NULL != e) delete (CUDTException*)e;}
-#else
-	std::map<DWORD, CUDTException*> m_mTLSRecord;
-	void checkTLSValue();
-	pthread_mutex_t m_TLSLock;
-#endif
+	void connect_complete(const UDTSOCKET u);
+	CUDTSocket* locate(const UDTSOCKET u);
+	CUDTSocket* locate(const sockaddr* peer, const UDTSOCKET id, int32_t isn);
+	void updateMux(CUDTSocket* s, const sockaddr* addr = NULL, const UDPSOCKET* = NULL);
+	void updateMux(CUDTSocket* s, const CUDTSocket* ls);
 
 private:
 	volatile bool m_bClosing;
@@ -173,20 +180,31 @@ private:
 	int m_iInstanceCount;				// number of startup() called by application
 	bool m_bGCStatus;					// if the GC thread is working (true)
 
-	pthread_t m_GCThread;
+	pthread_t m_WorkerThread;
 #ifndef WIN32
-	static void* garbageCollect(void*);
+	static void* worker(void* p);
 #else
-	static DWORD WINAPI garbageCollect(LPVOID);
+	static DWORD WINAPI worker(LPVOID p);
 #endif
 
-	std::map<P2PSOCKET, CP2PSocket*> m_ClosedSockets;   // temporarily store closed sockets
+private:
+	std::map<int64_t, std::set<UDTSOCKET> > m_PeerRec;// record sockets from peers to avoid repeated connection request, int64_t = (socker_id << 30) + isn
+	std::map<UDTSOCKET, CUDTSocket*> m_ClosedSockets;   // temporarily store closed sockets
+	std::map<UDTSOCKET, CUDTSocket*> m_Sockets;       // stores all the socket structures
+	pthread_mutex_t m_ControlLock;                    // used to synchronize UDT API
+	pthread_mutex_t m_IDLock;                         // used to synchronize ID generation
+	UDTSOCKET m_SocketID;                             // seed to generate a new unique socket ID
 
-	void checkBrokenSockets();
-	void removeSocket(const P2PSOCKET u);
+	std::map<int, CMultiplexer> m_mMultiplexer;		// UDP multiplexer
+	pthread_mutex_t m_MultiplexerLock;
+	CCache<CInfoBlock>* m_pCache;			// UDT network information cache
+
+	CEPoll m_EPoll;
+	struct p2phandle* m_p2ph;
 
 private:
-	struct p2p_handle* m_p2ph;
+	CUDTUnited(const CUDTUnited& other);
+	const CUDTUnited& operator=(const CUDTUnited& other);
 };
 
-#endif	// _P2P_H_
+#endif	// __P2P_H__

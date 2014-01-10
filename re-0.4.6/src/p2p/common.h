@@ -46,13 +46,13 @@ written by
    #include <sys/time.h>
    #include <sys/uio.h>
    #include <pthread.h>
-#else
-   #include <windows.h>
+//#else
+   //#include <windows.h>
 #endif
 
-#include <string>
 #include <cstdlib>
-#include <re_types.h>
+#include "udt.h"
+
 
 #ifdef WIN32
    // Windows compability
@@ -206,101 +206,6 @@ private:
    int m_iLocked;                       // Locking status
 
    CGuard& operator=(const CGuard&);
-};
-
-
-//////////////////////////////////////////////////////////////////////////
-// CUDTException
-class CUDTException
-{
-public:
-	CUDTException(int major = 0, int minor = 0, int err = -1);
-	CUDTException(const CUDTException& e);
-	virtual ~CUDTException();
-
-	// Functionality:
-	//    Get the description of the exception.
-	// Parameters:
-	//    None.
-	// Returned value:
-	//    Text message for the exception description.
-
-	virtual const char* getErrorMessage();
-
-	// Functionality:
-	//    Get the system errno for the exception.
-	// Parameters:
-	//    None.
-	// Returned value:
-	//    errno.
-
-	virtual int getErrorCode() const;
-
-	// Functionality:
-	//    Clear the error code.
-	// Parameters:
-	//    None.
-	// Returned value:
-	//    None.
-
-	virtual void clear();
-
-private:
-	int m_iMajor;        // major exception categories
-
-	// 0: correct condition
-	// 1: network setup exception
-	// 2: network connection broken
-	// 3: memory exception
-	// 4: file exception
-	// 5: method not supported
-	// 6+: undefined error
-
-	int m_iMinor;		// for specific error reasons
-	int m_iErrno;		// errno returned by the system if there is any
-	std::string m_strMsg;	// text error message
-
-	std::string m_strAPI;	// the name of UDT function that returns the error
-	std::string m_strDebug;	// debug information, set to the original place that causes the error
-
-public: // Error Code
-	static const int SUCCESS;
-	static const int ECONNSETUP;
-	static const int ENOSERVER;
-	static const int ECONNREJ;
-	static const int ESOCKFAIL;
-	static const int ESECFAIL;
-	static const int ECONNFAIL;
-	static const int ECONNLOST;
-	static const int ENOCONN;
-	static const int ERESOURCE;
-	static const int ETHREAD;
-	static const int ENOBUF;
-	static const int EFILE;
-	static const int EINVRDOFF;
-	static const int ERDPERM;
-	static const int EINVWROFF;
-	static const int EWRPERM;
-	static const int EINVOP;
-	static const int EBOUNDSOCK;
-	static const int ECONNSOCK;
-	static const int EINVPARAM;
-	static const int EINVSOCK;
-	static const int EUNBOUNDSOCK;
-	static const int ENOLISTEN;
-	static const int ERDVNOSERV;
-	static const int ERDVUNBOUND;
-	static const int ESTREAMILL;
-	static const int EDGRAMILL;
-	static const int EDUPLISTEN;
-	static const int ELARGEMSG;
-	static const int EINVPOLLID;
-	static const int EASYNCFAIL;
-	static const int EASYNCSND;
-	static const int EASYNCRCV;
-	static const int ETIMEOUT;
-	static const int EPEERERR;
-	static const int EUNKNOWN;
 };
 
 

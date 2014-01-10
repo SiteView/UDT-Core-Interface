@@ -320,7 +320,8 @@ int CChannel::sendtoP2P(struct p2pconnection *pconn, CPacket& packet) const
 	//#endif
 
 	uint32_t size = CPacket::m_iPktHdrSize + packet.getLength();
-	int res = p2p_send(pconn, (char*)packet.m_PacketVector, size);
+	int res = 0;
+	//res = p2p_send(pconn, (char*)packet.m_PacketVector, size);
 
 
 	// convert back into local host order

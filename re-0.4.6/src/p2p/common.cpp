@@ -47,16 +47,19 @@ written by
       #include <mach/mach_time.h>
    #endif
 #else
-   #include <winsock2.h>
-   #include <ws2tcpip.h>
+   //#include <winsock2.h>
+   //#include <ws2tcpip.h>
    #ifdef LEGACY_WIN32
       #include <wspiapi.h>
    #endif
 #endif
 
 #include <cmath>
-#include "common.h"
+#include <re.h>
+#include <re_types.h>
+#include <re_sa.h>
 #include "md5.h"
+#include "common.h"
 
 bool CTimer::m_bUseMicroSecond = false;
 uint64_t CTimer::s_ullCPUFrequency = CTimer::readCPUFrequency();
