@@ -48,6 +48,7 @@ written by
 
 #include <cstring>
 #include "common.h"
+#include "api.h"
 #include "core.h"
 #include "queue.h"
 
@@ -878,6 +879,7 @@ m_pRcvUList(NULL),
 m_pHash(NULL),
 m_pChannel(NULL),
 m_pTimer(NULL),
+m_pPeerAddr(NULL),
 m_iPayloadSize(),
 m_bClosing(false),
 m_ExitCond(),
@@ -939,6 +941,7 @@ CRcvQueue::~CRcvQueue()
    delete m_pRcvUList;
    delete m_pHash;
    delete m_pRendezvousQueue;
+   delete m_pPeerAddr;
 
    // remove all queued messages
    for (map<int32_t, std::queue<CPacket*> >::iterator i = m_mBuffer.begin(); i != m_mBuffer.end(); ++ i)
@@ -1025,7 +1028,6 @@ void CRcvQueue::init(int qsize, int payload, int version, int hsize, CChannel* c
       }
 
       unit->m_Packet.setLength(self->m_iPayloadSize);
-
       // reading next incoming packet, recvfrom returns -1 is nothing has been received
 	  //if (self->m_pChannel->recvfrom(addr, unit->m_Packet) < 0)
 		 // goto TIMER_CHECK;
@@ -1040,10 +1042,9 @@ void CRcvQueue::init(int qsize, int payload, int version, int hsize, CChannel* c
 #else
 	  WaitForSingleObject(self->m_RecvCond, INFINITE);
 #endif
-	  if (self->getRecvBuf(unit->m_Packet))
+	  if (self->getRecvBuf(unit->m_Packet) < 0)
 		  goto TIMER_CHECK;
 	  
-
       id = unit->m_Packet.m_iID;
 
       // ID 0 is for connection request, which should be passed to the listening socket or rendezvous sockets
@@ -1051,7 +1052,7 @@ void CRcvQueue::init(int qsize, int payload, int version, int hsize, CChannel* c
       {
          if (NULL != self->m_pListener)
 		 {
-            self->m_pListener->listen(addr, unit->m_Packet);
+            self->m_pListener->listen(self->m_pPeerAddr, unit->m_Packet);
 		 }
          else if (NULL != (u = self->m_pRendezvousQueue->retrieve(addr, id)))
          {
@@ -1191,7 +1192,7 @@ int CRcvQueue::recvfrom(int32_t id, CPacket& packet)
    return packet.getLength();
 }
 
-int CRcvQueue::setListener(CUDT* u)
+int CRcvQueue::setListener(CUDT* u, const sockaddr* peer)
 {
    CGuard lslock(m_LSLock);
 
@@ -1199,6 +1200,12 @@ int CRcvQueue::setListener(CUDT* u)
       return -1;
 
    m_pListener = u;
+
+   // record peer/server address
+   delete m_pPeerAddr;
+   m_pPeerAddr = (AF_INET == m_UnitQueue.m_iIPversion) ? (sockaddr*)new sockaddr_in : (sockaddr*)new sockaddr_in6;
+   memcpy(m_pPeerAddr, peer, (AF_INET == m_UnitQueue.m_iIPversion) ? sizeof(sockaddr_in) : sizeof(sockaddr_in6));
+
    return 0;
 }
 
@@ -1260,7 +1267,7 @@ CUDT* CRcvQueue::getNewEntry()
 
 void CRcvQueue::storePkt(int32_t id, CPacket* pkt)
 {
-   CGuard bufferlock(m_PassLock);   
+   CGuard bufferlock(m_PassLock);
 
    map<int32_t, std::queue<CPacket*> >::iterator i = m_mBuffer.find(id);
 
@@ -1284,10 +1291,49 @@ void CRcvQueue::storePkt(int32_t id, CPacket* pkt)
    }
 }
 
-void CRcvQueue::postRecv(const char* buf, uint32_t len)
+void CRcvQueue::postRecv(const sockaddr* addr, const char* buf, uint32_t len)
 {
 	CGuard bufferlock(m_RecvLock);
-	m_vecBuf.push_back(buf);
+
+	//if (len == 16)
+	//{
+		//char * strbuf = new char[len];
+		//memcpy(strbuf, buf, len);
+		//for (int j = 0, n = len / 4; j < n; ++ j)
+		//	*((uint32_t *)strbuf + j) = ntohl(*((uint32_t *)strbuf + j));
+
+		//iovec* iotmp = new iovec;
+		//iotmp->iov_len = len;
+		//iotmp->iov_base = new char[len];
+		//memcpy(iotmp->iov_base, buf, len);
+		//for (int j = 0, n = len / 4; j < n; ++ j)
+		//	*((uint32_t *)iotmp->iov_base + j) = ntohl(*((uint32_t *)iotmp->iov_base + j));
+		//int c = 0;
+	//}
+	
+	//uint32_t m_nHeader[4];
+	//iovec* iotmp = new iovec;
+	//iotmp->iov_len = len;
+	//if (len == 16)
+	//{
+	//	for (int i = 0; i < 4; ++ i)
+	//		m_nHeader[i] = 0;
+	//	iotmp->iov_base = (char *)m_nHeader;
+	//}
+	//else
+	//	iotmp->iov_base = new char[len];
+
+	//memcpy(iotmp->iov_base, buf, len);
+	//for (int j = 0, n = len / 4; j < n; ++ j)
+	//	*((uint32_t *)iotmp->iov_base + j) = ntohl(*((uint32_t *)iotmp->iov_base + j));
+
+	iovec* iotmp = new iovec;
+	iotmp->iov_len = len;
+	iotmp->iov_base = new char[len];
+	memcpy(iotmp->iov_base, buf, len);
+
+	m_vecBuf.push_back(iotmp);
+
 	if (m_vecBuf.size() >= 2)
 	{
 #ifndef WIN32
@@ -1300,23 +1346,26 @@ void CRcvQueue::postRecv(const char* buf, uint32_t len)
 
 int CRcvQueue::getRecvBuf(CPacket& packet)
 {
-	//CPacket* pkt = new CPacket;
-	//memcpy(pkt->m_nHeader, m_nHeader, m_iPktHdrSize);
-	//pkt->m_pcData = new char[m_PacketVector[1].iov_len];
-	//memcpy(pkt->m_pcData, m_pcData, m_PacketVector[1].iov_len);
-	//pkt->m_PacketVector[1].iov_len = m_PacketVector[1].iov_len;
-
 	CGuard bufferlock(m_RecvLock);
+
 	if (m_vecBuf.size() < 2)
-		return 1;
-	
-	std::string buf1 = m_vecBuf.back();
-	std::string buf2 = m_vecBuf.back();
-	packet.m_PacketVector[0].iov_len = buf1.size();
-	memcpy(packet.m_pcData, buf1.c_str(), buf1.size());
-	packet.m_PacketVector[1].iov_len = buf2.size();
-	memcpy(packet.m_pcData, buf2.c_str(), buf2.size());
-	int res = buf1.length() + buf2.length();
+	{
+		packet.setLength(-1);
+		return -1;
+	}
+
+	int res = m_vecBuf[0]->iov_len + m_vecBuf[1]->iov_len;
+	if (m_vecBuf[0]->iov_len == 16)
+	{
+		packet.m_PacketVector[0].iov_len = m_vecBuf[0]->iov_len;
+		memcpy(packet.m_PacketVector[0].iov_base, m_vecBuf[0]->iov_base, m_vecBuf[0]->iov_len);
+
+		packet.m_PacketVector[1].iov_len = m_vecBuf[1]->iov_len;
+		memcpy(packet.m_PacketVector[1].iov_base, m_vecBuf[1]->iov_base, m_vecBuf[1]->iov_len);
+	}
+	else
+		return -1;
+
 	if (res <= 0)
 	{
 		packet.setLength(-1);
@@ -1340,5 +1389,7 @@ int CRcvQueue::getRecvBuf(CPacket& packet)
 		for (int j = 0, n = packet.getLength() / 4; j < n; ++ j)
 			*((uint32_t *)packet.m_pcData + j) = ntohl(*((uint32_t *)packet.m_pcData + j));
 	}
-	return 0;
+
+	m_vecBuf.erase(m_vecBuf.begin()+0, m_vecBuf.begin()+2);
+	return packet.getLength();
 }

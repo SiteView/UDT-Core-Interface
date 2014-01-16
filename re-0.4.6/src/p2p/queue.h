@@ -473,6 +473,7 @@ private:
    CHash* m_pHash;			// Hash table for UDT socket looking up
    CChannel* m_pChannel;		// UDP channel for receving packets
    CTimer* m_pTimer;			// shared timer with the snd queue
+   sockaddr* m_pPeerAddr;
 
    int m_iPayloadSize;                  // packet payload size
 
@@ -480,7 +481,7 @@ private:
    pthread_cond_t m_ExitCond;
 
 private:
-   int setListener(CUDT* u);
+   int setListener(CUDT* u, const sockaddr* peer);
    void removeListener(const CUDT* u);
 
    void registerConnector(const UDTSOCKET& id, CUDT* u, int ipv, const sockaddr* addr, uint64_t ttl);
@@ -491,17 +492,17 @@ private:
    CUDT* getNewEntry();
 
    void storePkt(int32_t id, CPacket* pkt);
-   void postRecv(const char* buf, uint32_t len);
+   void postRecv(const sockaddr* addr, const char* buf, uint32_t len);
    int getRecvBuf(CPacket& packet);
 
 private:
    pthread_mutex_t m_LSLock;
    CUDT* m_pListener;                                   // pointer to the (unique, if any) listening UDT entity
    CRendezvousQueue* m_pRendezvousQueue;                // The list of sockets in rendezvous mode
-   std::vector<std::string> m_vecBuf;
    std::vector<CUDT*> m_vNewEntry;                      // newly added entries, to be inserted
    pthread_mutex_t m_IDLock;
 
+   std::vector<iovec*> m_vecBuf;
    std::map<int32_t, std::queue<CPacket*> > m_mBuffer;	// temporary buffer for rendezvous connection request
    pthread_mutex_t m_PassLock;
    pthread_cond_t m_PassCond;

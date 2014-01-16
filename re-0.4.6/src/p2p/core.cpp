@@ -213,7 +213,6 @@ CUDT::~CUDT()
    delete m_pPeerAddr;
    delete m_pSNode;
    delete m_pRNode;
-   m_p2pconn = NULL;
 }
 
 void CUDT::setOpt(UDTOpt optName, const void* optval, int)
@@ -556,7 +555,7 @@ void CUDT::open()
    m_bOpened = true;
 }
 
-void CUDT::listen()
+void CUDT::listen(const sockaddr* peer)
 {
    CGuard cg(m_ConnectionLock);
 
@@ -570,8 +569,13 @@ void CUDT::listen()
    if (m_bListening)
       return;
 
+   // record peer/server address
+   delete m_pPeerAddr;
+   m_pPeerAddr = (AF_INET == m_iIPversion) ? (sockaddr*)new sockaddr_in : (sockaddr*)new sockaddr_in6;
+   memcpy(m_pPeerAddr, peer, (AF_INET == m_iIPversion) ? sizeof(sockaddr_in) : sizeof(sockaddr_in6));
+
    // if there is already another socket listening on the same port
-   if (m_pRcvQueue->setListener(this) < 0)
+   if (m_pRcvQueue->setListener(this, peer) < 0)
       throw CUDTException(5, 11, 0);
 
    m_bListening = true;
@@ -633,7 +637,8 @@ void CUDT::connect(const sockaddr* serv_addr)
    int hs_size = m_iPayloadSize;
    m_ConnReq.serialize(reqdata, hs_size);
    request.setLength(hs_size);
-   m_pSndQueue->sendto(serv_addr, request);
+   //m_pSndQueue->sendto(serv_addr, request);
+   m_pSndQueue->sendtoP2P(m_p2pconn, request);
    m_llLastReqTime = CTimer::getTime();
 
    m_bConnecting = true;
@@ -661,7 +666,8 @@ void CUDT::connect(const sockaddr* serv_addr)
          request.setLength(hs_size);
          if (m_bRendezvous)
             request.m_iID = m_ConnRes.m_iID;
-         m_pSndQueue->sendto(serv_addr, request);
+         //m_pSndQueue->sendto(serv_addr, request);
+		 m_pSndQueue->sendtoP2P(m_p2pconn, request);
          m_llLastReqTime = CTimer::getTime();
       }
 
@@ -698,6 +704,16 @@ void CUDT::connect(const sockaddr* serv_addr)
 
    if (e.getErrorCode() != 0)
       throw e;
+}
+
+int CUDT::p2pConnect(const UDTSOCKET u, const char* peername, struct p2phandle* p2p)
+{
+	int err = p2p_connect(p2p, &m_p2pconn, peername, p2p_connect_handler, p2p_receive_handler, m_p2pconn);
+	if (err)
+		return -1;
+	m_p2pconn->udtsock = u;
+	m_p2ph = p2p;
+	return u;
 }
 
 int CUDT::connect(const CPacket& response) throw ()
@@ -2462,7 +2478,7 @@ int CUDT::listen(sockaddr* addr, CPacket& packet)
 {
    if (m_bClosing)
       return 1002;
-
+   int nlen = packet.getLength();
    if (packet.getLength() != CHandShake::m_iContentSize)
       return 1004;
 
@@ -2472,7 +2488,7 @@ int CUDT::listen(sockaddr* addr, CPacket& packet)
    // SYN cookie
    char clienthost[NI_MAXHOST];
    char clientport[NI_MAXSERV];
-   getnameinfo(addr, (AF_INET == m_iVersion) ? sizeof(sockaddr_in) : sizeof(sockaddr_in6), clienthost, sizeof(clienthost), clientport, sizeof(clientport), NI_NUMERICHOST|NI_NUMERICSERV);
+   getnameinfo(m_pPeerAddr, (AF_INET == m_iVersion) ? sizeof(sockaddr_in) : sizeof(sockaddr_in6), clienthost, sizeof(clienthost), clientport, sizeof(clientport), NI_NUMERICHOST|NI_NUMERICSERV);
    int64_t timestamp = (CTimer::getTime() - m_StartTime) / 60000000; // secret changes every one minute
    stringstream cookiestr;
    cookiestr << clienthost << ":" << clientport << ":" << timestamp;

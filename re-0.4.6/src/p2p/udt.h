@@ -335,6 +335,7 @@ UDT_API int bind(UDTSOCKET u, const struct sockaddr* name, int namelen);
 UDT_API int listen(UDTSOCKET u, int backlog);
 UDT_API UDTSOCKET accept(UDTSOCKET u, struct sockaddr* addr, int* addrlen);
 UDT_API int connect(UDTSOCKET u, const struct sockaddr* name, int namelen);
+UDT_API int connect(UDTSOCKET u, const UDPSOCKET* udpsaock, const struct sockaddr* name, int namelen);
 UDT_API int close(UDTSOCKET u);
 UDT_API int getpeername(UDTSOCKET u, struct sockaddr* name, int* namelen);
 UDT_API int getsockname(UDTSOCKET u, struct sockaddr* name, int* namelen);
@@ -350,17 +351,13 @@ UDT_API int64_t sendfile(UDTSOCKET u, std::fstream& ifs, int64_t& offset, int64_
 UDT_API int64_t recvfile(UDTSOCKET u, std::fstream& ofs, int64_t& offset, int64_t size, int block = 7280000);
 
 // P2P_API
-UDT_API int p2p_init(const char* ctlip, const uint16_t ctlport, 
+UDT_API int p2pInit(const char* ctlip, const uint16_t ctlport, 
 	const char* stunip, const uint16_t stunport,
 	const char* name, const char* passwd);
-UDT_API int p2p_connect(const char* peername);
-//UDT_API int p2p_accept();
-UDT_API int p2p_send(const char* peername, const char* buf, int len);
-UDT_API int p2p_disconnect(const char* peername);
-UDT_API int p2p_close();
-//UDT_API void p2p_init_handler(int err, struct p2p_handle* p2p);
-//UDT_API void p2p_receive_handler(const char* data, uint32_t len, void *arg);
-//UDT_API void p2p_request_handler(struct p2p_handle *p2p, const char* peername, struct p2p_connection **ppconn);
+UDT_API UDTSOCKET p2pConnect(const char* peername);
+UDT_API int p2pSend(const UDTSOCKET u, const char* peername, const char* buf, int len);
+UDT_API int p2pDisconnect(const UDTSOCKET u, const char* peername);
+UDT_API int p2pClose();
 
 }  // namespace UDT
 

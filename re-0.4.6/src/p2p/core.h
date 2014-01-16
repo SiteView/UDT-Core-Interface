@@ -43,18 +43,21 @@ written by
 
 
 #include "udt.h"
+#include "api.h"
 #include "common.h"
 #include "losslist.h"
 #include "buffer.h"
 #include "window.h"
 #include "packet.h"
 #include "channel.h"
-#include "p2p.h"
 #include "ccc.h"
 #include "cache.h"
 #include "queue.h"
 
 enum UDTSockType {UDT_STREAM = 1, UDT_DGRAM};
+
+class CUDTSocket;
+class CUDTUnited;
 
 class CUDT
 {
@@ -79,9 +82,9 @@ public: //API
    static UDTSOCKET socket(int af, int type = SOCK_STREAM, int protocol = 0);
    static int newConnection(const UDTSOCKET listen, const sockaddr* peer, CHandShake* hs);
    static int bind(UDTSOCKET u, const UDPSOCKET* udpsaock, const sockaddr* name, int namelen);
-   static int listen(UDTSOCKET u, int backlog);
+   static int listen(UDTSOCKET u, const sockaddr* peer, int backlog);
    static UDTSOCKET accept(UDTSOCKET u, sockaddr* addr, int* addrlen);
-   static int connect(UDTSOCKET u, const sockaddr* name, int namelen);
+   static int connect(UDTSOCKET u, const UDPSOCKET* udpsaock, const sockaddr* name, int namelen);
    static int close(UDTSOCKET u);
    static int getpeername(UDTSOCKET u, sockaddr* name, int* namelen);
    static int getsockname(UDTSOCKET u, sockaddr* name, int* namelen);
@@ -103,19 +106,16 @@ public: //API
    static int epoll_wait(const int eid, std::set<UDTSOCKET>* readfds, std::set<UDTSOCKET>* writefds, int64_t msTimeOut, std::set<SYSSOCKET>* lrfds = NULL, std::set<SYSSOCKET>* wrfds = NULL);
    static int epoll_release(const int eid);
    static CUDTException& getlasterror();
-   static int perfmon(UDTSOCKET u, CPerfMon* perf, bool clear = true);
    static UDTSTATUS getsockstate(UDTSOCKET u);
-
-   static int p2p_init(const char* ctlip, const uint16_t ctlport, const char* stunip, const uint16_t stunport, const char* name, const char* passwd);
-   static int p2p_connect(const char* peername);
-   static int p2p_disconnect(const char* peername);
-   static int p2p_send(const char* peername, const char* buf, int len);
-   static int p2p_run();
-   static int p2p_close();
-   static int postRecv(UDTSOCKET u, const char* buf, uint32_t len);
-
-public: // internal API
    static CUDT* getUDTHandle(UDTSOCKET u);
+   static int perfmon(UDTSOCKET u, CPerfMon* perf, bool clear = true);
+
+   static int startup(const char* ctlip, const uint16_t ctlport, const char* stunip, const uint16_t stunport, const char* name, const char* passwd);
+   static UDTSOCKET p2pConnect(const char* peername);
+   static int p2p_disconnect(const char* peername);
+   static int p2p_send(const UDTSOCKET u, const char* peername, const char* buf, int len);
+   static int p2p_close();
+   static int postRecv(UDTSOCKET u, const sockaddr* addr, const char* buf, uint32_t len);
 
 private:
       // Functionality:
@@ -134,7 +134,7 @@ private:
       // Returned value:
       //    None.
 
-   void listen();
+   void listen(const sockaddr* peer);
 
       // Functionality:
       //    Connect to a UDT entity listening at address "peer".
@@ -144,6 +144,7 @@ private:
       //    None.
 
    void connect(const sockaddr* peer);
+   int p2pConnect(const UDTSOCKET u, const char* peername, struct p2phandle* p2p);
 
       // Functionality:
       //    Process the response handshake packet.
@@ -283,6 +284,9 @@ private: // Identification
    UDTSockType m_iSockType;                     // Type of the UDT connection (SOCK_STREAM or SOCK_DGRAM)
    UDTSOCKET m_PeerID;				// peer id, for multiplexer
    static const int m_iVersion;                 // UDT version, for compatibility use
+
+   struct p2phandle* m_p2ph;
+   struct p2pconnection* m_p2pconn;
 
 private: // Packet sizes
    int m_iPktSize;                              // Maximum/regular packet size, in bytes
@@ -454,9 +458,6 @@ private: // for UDP multiplexer
    uint32_t m_piSelfIP[4];			// local UDP IP address
    CSNode* m_pSNode;				// node information for UDT list used in snd queue
    CRNode* m_pRNode;                            // node information for UDT list used in rcv queue
-
-   struct p2p* m_p2ph;
-   struct p2pconnection* m_p2pconn;
 
 private: // for epoll
    std::set<int> m_sPollID;                     // set of epoll ID to trigger
