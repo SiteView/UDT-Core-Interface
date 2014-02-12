@@ -3,6 +3,8 @@
  *
  * Copyright (C) 2010 Creytiv.com
  */
+#ifndef __RE_TYPES_H__
+#define __RE_TYPES_H__
 
 #include <sys/types.h>
 
@@ -76,19 +78,19 @@ typedef unsigned long long int    uint64_t;
  *     www.gnu.org/software/autoconf/manual/html_node/Particular-Headers.html
  */
 #ifdef HAVE_STDBOOL_H
-# include <stdbool.h>
+#include <stdbool.h>
 #else
-# ifndef HAVE__BOOL
-#  ifdef __cplusplus
+#ifndef HAVE__BOOL
+#ifdef __cplusplus
 typedef bool _Bool;
-#  else
-#   define _Bool signed char
-#  endif
-# endif
-# define bool _Bool
-# define false 0
-# define true 1
-# define __bool_true_false_are_defined 1
+#else
+#define _Bool signed char
+#endif
+#define bool _Bool
+#define false 0
+#define true 1
+#define __bool_true_false_are_defined 1
+#endif
 #endif
 
 /* Needed for MS compiler */
@@ -232,3 +234,5 @@ typedef bool _Bool;
 #ifndef EAUTH
 #define EAUTH 217
 #endif
+
+#endif	// __RE_TYPES_H__
