@@ -1,0 +1,10 @@
+D:\TurboTransfer\udtCSharp\udtCSharp\bin\Debug\udtCSharp.dll
+D:\TurboTransfer\udtCSharp\udtCSharp\bin\Debug\udtCSharp.pdb
+D:\TurboTransfer\udtCSharp\udtCSharp\obj\Debug\udtCSharp.csprojResolveAssemblyReference.cache
+D:\TurboTransfer\udtCSharp\udtCSharp\obj\Debug\udtCSharp.dll
+D:\TurboTransfer\udtCSharp\udtCSharp\obj\Debug\udtCSharp.pdb
+D:\GitHub\UDT-Core-Interface\udtCSharp\udtCSharp\bin\Debug\udtCSharp.dll
+D:\GitHub\UDT-Core-Interface\udtCSharp\udtCSharp\bin\Debug\udtCSharp.pdb
+D:\GitHub\UDT-Core-Interface\udtCSharp\udtCSharp\obj\Debug\udtCSharp.csprojResolveAssemblyReference.cache
+D:\GitHub\UDT-Core-Interface\udtCSharp\udtCSharp\obj\Debug\udtCSharp.dll
+D:\GitHub\UDT-Core-Interface\udtCSharp\udtCSharp\obj\Debug\udtCSharp.pdb
