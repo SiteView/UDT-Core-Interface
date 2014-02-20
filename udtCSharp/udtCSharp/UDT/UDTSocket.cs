@@ -24,8 +24,8 @@ namespace udtCSharp.UDT
 
         //endpoint
 	    private UDPEndPoint endpoint;
-	
-	    private boolean active;
+
+        private volatile bool active;
 	
         ////processing received data
         //private UDTReceiver receiver;

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using udtCSharp.packets;
 
 namespace udtCSharp.UDT
 {
@@ -24,14 +25,14 @@ namespace udtCSharp.UDT
 
 	    protected volatile UDTSocket socket;
 	
-	    protected  UDTStatistics statistics;
+        //protected  UDTStatistics statistics;
 	
-	    protected int receiveBufferSize=64*32768;
+        //protected int receiveBufferSize=64*32768;
 	
-	    protected CongestionControl cc;
+        //protected CongestionControl cc;
 	
-	    //cache dgPacket (peer stays the same always)
-	    private DatagramPacket dgPacket;
+        ////cache dgPacket (peer stays the same always)
+        private byte[] dgPacket;
 
 	    /**
 	     * flow window size, i.e. how many data packets are
@@ -42,7 +43,7 @@ namespace udtCSharp.UDT
 	    /**
 	     * remote UDT entity (address and socket ID)
 	     */
-	    protected Destination destination;
+        //protected Destination destination;
 	
 	    /**
 	     * local port
@@ -64,13 +65,13 @@ namespace udtCSharp.UDT
 	     */
 	    protected int datagramSize=DEFAULT_DATAGRAM_SIZE;
 	
-	    protected long initialSequenceNumber=null;
+	    protected long initialSequenceNumber=0;
 	
 	    protected long mySocketID;
 	
-	    private static AtomicLong nextSocketID=new AtomicLong(20+new Random().nextInt(5000));
+        //private static AtomicLong nextSocketID=new AtomicLong(20+new Random().nextInt(5000));
 	
-        //public UDTSession(String description, Destination destination){
+        public UDTSession(String description, Destination destination){
         //    statistics=new UDTStatistics(description);
         //    mySocketID=nextSocketID.incrementAndGet();
         //    this.destination=destination;
@@ -86,7 +87,7 @@ namespace udtCSharp.UDT
         //    }
         //    cc=(CongestionControl)ccObject;
         //    logger.info("Using "+cc.getClass().getName());
-        //}
+        }
 	
 	
         //public abstract void received(UDTPacket packet, Destination peer);
@@ -136,10 +137,11 @@ namespace udtCSharp.UDT
         //public Destination getDestination() {
         //    return destination;
         //}
-	
-        //public int getDatagramSize() {
-        //    return datagramSize;
-        //}
+
+        public int getDatagramSize()
+        {
+            return datagramSize;
+        }
 
         //public void setDatagramSize(int datagramSize) {
         //    this.datagramSize = datagramSize;
@@ -181,9 +183,10 @@ namespace udtCSharp.UDT
         //    this.initialSequenceNumber=initialSequenceNumber;
         //}
 
-        //public DatagramPacket getDatagram(){
-        //    return dgPacket;
-        //}
+        public byte[] getDatagram()
+        {
+            return dgPacket;
+        }
 	
         //public String toString(){
         //    StringBuilder sb=new StringBuilder();

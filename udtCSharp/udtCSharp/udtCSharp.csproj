@@ -43,8 +43,10 @@
     <Compile Include="Common\SendFile.cs" />
     <Compile Include="ICollect.cs" />
     <Compile Include="Log.cs" />
+    <Compile Include="packets\Destination.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="UDT\UDPEndPoint.cs" />
+    <Compile Include="UDT\UDTPacket.cs" />
     <Compile Include="UDT\UDTSession.cs" />
     <Compile Include="UDT\UDTSocket.cs" />
   </ItemGroup>
