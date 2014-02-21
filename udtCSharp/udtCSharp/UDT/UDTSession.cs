@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
+using System.Runtime.CompilerServices;
 using udtCSharp.packets;
 
 namespace udtCSharp.UDT
@@ -25,11 +27,11 @@ namespace udtCSharp.UDT
 
 	    protected volatile UDTSocket socket;
 	
-        //protected  UDTStatistics statistics;
+        protected  UDTStatistics statistics;
 	
-        //protected int receiveBufferSize=64*32768;
+        protected int receiveBufferSize=64*32768;
 	
-        //protected CongestionControl cc;
+        protected CongestionControl cc;
 	
         ////cache dgPacket (peer stays the same always)
         private byte[] dgPacket;
@@ -43,7 +45,7 @@ namespace udtCSharp.UDT
 	    /**
 	     * remote UDT entity (address and socket ID)
 	     */
-        //protected Destination destination;
+        protected Destination destination;
 	
 	    /**
 	     * local port
@@ -70,131 +72,164 @@ namespace udtCSharp.UDT
 	    protected long mySocketID;
 	
         //private static AtomicLong nextSocketID=new AtomicLong(20+new Random().nextInt(5000));
-	
-        public UDTSession(String description, Destination destination){
-        //    statistics=new UDTStatistics(description);
-        //    mySocketID=nextSocketID.incrementAndGet();
-        //    this.destination=destination;
-        //    this.dgPacket=new DatagramPacket(new byte[0],0,destination.getAddress(),destination.getPort());
-        //    String clazzP=System.getProperty(CC_CLASS,UDTCongestionControl.class.getName());
-        //    Object ccObject=null;
-        //    try{
-        //        Class<?>clazz=Class.forName(clazzP);
-        //        ccObject=clazz.getDeclaredConstructor(UDTSession.class).newInstance(this);
-        //    }catch(Exception e){
-        //        logger.log(Level.WARNING,"Can't setup congestion control class <"+clazzP+">, using default.",e);
-        //        ccObject=new UDTCongestionControl(this);
-        //    }
-        //    cc=(CongestionControl)ccObject;
-        //    logger.info("Using "+cc.getClass().getName());
+	    private volatile long nextSocketID;
+
+        public UDTSession(String description, Destination destination)
+        {
+            Interlocked.Read(ref nextSocketID);
+
+            statistics=new UDTStatistics(description);
+            mySocketID=nextSocketID.incrementAndGet();
+            this.destination=destination;
+            this.dgPacket=new DatagramPacket(new byte[0],0,destination.getAddress(),destination.getPort());
+            String clazzP=System.getProperty(CC_CLASS,UDTCongestionControl.class.getName());
+            Object ccObject=null;
+            try
+            {
+                Class<?>clazz=Class.forName(clazzP);
+                ccObject=clazz.getDeclaredConstructor(UDTSession.class).newInstance(this);
+            }catch(Exception e){
+                logger.log(Level.WARNING,"Can't setup congestion control class <"+clazzP+">, using default.",e);
+                ccObject=new UDTCongestionControl(this);
+            }
+            cc=(CongestionControl)ccObject;
+            Log.Write("Using "+cc.getClass().getName());
         }
-	
-	
-        //public abstract void received(UDTPacket packet, Destination peer);
-	
-	
-        //public UDTSocket getSocket() {
-        //    return socket;
-        //}
 
-        //public CongestionControl getCongestionControl() {
-        //    return cc;
-        //}
 
-        //public int getState() {
-        //    return state;
-        //}
+        public abstract void received(UDTPacket packet, Destination peer);
 
-        //public void setMode(int mode) {
-        //    this.mode = mode;
-        //}
 
-        //public void setSocket(UDTSocket socket) {
-        //    this.socket = socket;
-        //}
+        public UDTSocket getSocket()
+        {
+            return socket;
+        }
 
-        //public void setState(int state) {
-        //    logger.info(toString()+" connection state CHANGED to <"+state+">");
-        //    this.state = state;
-        //}
-	
-        //public boolean isReady(){
-        //    return state==ready;
-        //}
+        public CongestionControl getCongestionControl() {
+            return cc;
+        }
 
-        //public boolean isActive() {
-        //    return active == true;
-        //}
+        public int getState()
+        {
+            return state;
+        }
 
-        //public void setActive(boolean active) {
-        //    this.active = active;
-        //}
-	
-        //public boolean isShutdown(){
-        //    return state==shutdown || state==invalid;
-        //}
-	
-        //public Destination getDestination() {
-        //    return destination;
-        //}
+        public void setMode(int mode)
+        {
+            this.mode = mode;
+        }
+
+        public void setSocket(UDTSocket socket)
+        {
+            this.socket = socket;
+        }
+
+        public void setState(int state)
+        {
+            Log.Write(toString() + " connection state CHANGED to <" + state + ">");
+            this.state = state;
+        }
+
+        public bool isReady()
+        {
+            return state == ready;
+        }
+
+        public bool isActive()
+        {
+            return active == true;
+        }
+
+        public void setActive(bool active)
+        {
+            this.active = active;
+        }
+
+        public bool isShutdown()
+        {
+            return state == shutdown || state == invalid;
+        }
+
+        public Destination getDestination()
+        {
+            return destination;
+        }
 
         public int getDatagramSize()
         {
             return datagramSize;
         }
 
-        //public void setDatagramSize(int datagramSize) {
-        //    this.datagramSize = datagramSize;
-        //}
+        public void setDatagramSize(int datagramSize)
+        {
+            this.datagramSize = datagramSize;
+        }
+
+        public int getReceiveBufferSize()
+        {
+            return receiveBufferSize;
+        }
+
+        public void setReceiveBufferSize(int bufferSize)
+        {
+            this.receiveBufferSize = bufferSize;
+        }
+
+        public int getFlowWindowSize()
+        {
+            return flowWindowSize;
+        }
+
+        public void setFlowWindowSize(int flowWindowSize)
+        {
+            this.flowWindowSize = flowWindowSize;
+        }
+
+        public UDTStatistics getStatistics()
+        {
+            return statistics;
+        }
+
+        public long getSocketID()
+        {
+            return mySocketID;
+        }
 	
-        //public int getReceiveBufferSize() {
-        //    return receiveBufferSize;
-        //}
+        /// <summary>
+        /// [MethodImpl(MethodImplOptions.Synchronized)]表示定义为同步方法
+        /// [MethodImpl(MethodImplOptions.Synchronized)] = loc(this)
+        /// </summary>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        public long getInitialSequenceNumber()
+        {
+            if(initialSequenceNumber==null)
+            {
+                initialSequenceNumber=1; //TODO must be random?
+            }
+            return initialSequenceNumber;
+        }
 
-        //public void setReceiveBufferSize(int bufferSize) {
-        //    this.receiveBufferSize = bufferSize;
-        //}
-
-        //public int getFlowWindowSize() {
-        //    return flowWindowSize;
-        //}
-
-        //public void setFlowWindowSize(int flowWindowSize) {
-        //    this.flowWindowSize = flowWindowSize;
-        //}
-
-        //public UDTStatistics getStatistics(){
-        //    return statistics;
-        //}
-
-        //public long getSocketID(){
-        //    return mySocketID;
-        //}
-
-	
-        //public synchronized long getInitialSequenceNumber(){
-        //    if(initialSequenceNumber==null){
-        //        initialSequenceNumber=1l; //TODO must be random?
-        //    }
-        //    return initialSequenceNumber;
-        //}
-	
-        //public synchronized void setInitialSequenceNumber(long initialSequenceNumber){
-        //    this.initialSequenceNumber=initialSequenceNumber;
-        //}
+        [MethodImpl(MethodImplOptions.Synchronized)]
+        public void setInitialSequenceNumber(long initialSequenceNumber)
+        {
+            this.initialSequenceNumber=initialSequenceNumber;
+        }
 
         public byte[] getDatagram()
         {
             return dgPacket;
         }
-	
-        //public String toString(){
-        //    StringBuilder sb=new StringBuilder();
-        //    sb.append(super.toString());
-        //    sb.append(" [");
-        //    sb.append("socketID=").append(this.mySocketID);
-        //    sb.append(" ]");
-        //    return sb.toString();
-        //}
+
+        public String toString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append(this.ToString());
+            sb.Append(" [");
+            sb.Append("socketID=").Append(this.mySocketID);
+            sb.Append(" ]");
+            
+            return sb.ToString();
+        }
     }
 }

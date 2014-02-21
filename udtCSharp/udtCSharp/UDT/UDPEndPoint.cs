@@ -242,8 +242,8 @@ namespace udtCSharp.UDT
         private UDTSession lastSession;       
 	
         private int n=0;
-	
-        private object olock = new object();
+
+        private object thisLock = new object();
 	
         protected void doReceive()
         {
@@ -260,29 +260,35 @@ namespace udtCSharp.UDT
                         Destination peer=new Destination(sender.Address,sender.Port);
 
                         int l=dp.Length;
-                        UDTPacket packet=PacketFactory.createPacket(dp.getData(),l);
+                        UDTPacket packet=PacketFactory.createPacket(dp,l);
                         lastPacket=packet;
 
                         //handle connection handshake 
-                        if(packet.isConnectionHandshake()){
-                            synchronized(lock){
-                                Long id=Long.valueOf(packet.getDestinationID());
-                                UDTSession session=sessions.get(id);
-                                if(session==null){
-                                    session=new ServerSession(dp,this);
-                                    addSession(session.getSocketID(),session);
+                        if(packet.isConnectionHandshake())
+                        {
+                            lock (thisLock)
+                            {
+                                long id=packet.getDestinationID();
+                                UDTSession session;
+                                sessions.TryGetValue(id, out session);
+                                if(session==null)
+                                {
+                                    session = new ServerSession(dp, this);
+                                    addSession(session.getSocketID(), session);
                                     //TODO need to check peer to avoid duplicate server session
-                                    if(serverSocketMode){
-                                        logger.fine("Pooling new request.");
-                                        sessionHandoff.put(session);
-                                        logger.fine("Request taken for processing.");
+                                    if (serverSocketMode)
+                                    {
+                                        Log.Write("Pooling new request.");
+                                        sessionHandoff.Enqueue(session);
+                                        Log.Write("Request taken for processing.");
                                     }
                                 }
                                 peer.setSocketID(((ConnectionHandshake)packet).getSocketID());
                                 session.received(packet,peer);
                             }
                         }
-                        else{
+                        else
+                        {
                             //dispatch to existing session
                             long dest=packet.getDestinationID();
                             UDTSession session;
@@ -292,7 +298,7 @@ namespace udtCSharp.UDT
                             }
                             else
                             {
-                                session=sessions.get(dest);
+                                sessions.TryGetValue(dest, out session);
                                 lastSession=session;
                                 lastDestID=dest;
                             }
