@@ -10,16 +10,21 @@ namespace udtCSharp.UDT
     {
         private String componentDescription;
 
-	    private volatile long roundTripTime;
-	    private volatile long roundTripTimeVariance;
-	    private volatile long packetArrivalRate;
-	    private volatile long estimatedLinkCapacity;
-	    private volatile double sendPeriod;
-	    private volatile long congestionWindowSize;
+        private volatile int roundTripTime;
+        private volatile int roundTripTimeVariance;
+        private volatile int packetArrivalRate;
+        private volatile int estimatedLinkCapacity;
+        private volatile float sendPeriod;
+        private volatile int congestionWindowSize;
 
         public UDTStatistics(String componentDescription)
         {
             this.componentDescription = componentDescription;
+        }
+
+        public void setSendPeriod(double sendPeriod)
+        {
+            this.sendPeriod = (float)sendPeriod;
         }
     }
 }

@@ -10,7 +10,7 @@ namespace udtCSharp.packets
 {
     public class Destination
     {
-        private int port;
+        private  int port;
 
 	    private IPAddress address;
 	

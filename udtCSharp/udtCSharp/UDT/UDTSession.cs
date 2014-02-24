@@ -9,7 +9,7 @@ using udtCSharp.packets;
 
 namespace udtCSharp.UDT
 {
-    public class UDTSession
+    public abstract class UDTSession
     {
         protected int mode;
 	    protected volatile bool active;
@@ -17,13 +17,13 @@ namespace udtCSharp.UDT
 	    protected volatile UDTPacket lastPacket;
 	
 	    //state constants	
-	    public static  int start=0;
-	    public static  int handshaking=1;
-	    public static  int ready=2;
-	    public static  int keepalive=3;
-	    public static  int shutdown=4;
-	
-	    public static  int invalid=99;
+	    public const int start=0;
+        public const int handshaking = 1;
+        public const int ready = 2;
+        public const int keepalive = 3;
+        public const int shutdown = 4;
+
+        public const int invalid = 99;
 
 	    protected volatile UDTSocket socket;
 	
@@ -55,11 +55,11 @@ namespace udtCSharp.UDT
 	
 	    public static int DEFAULT_DATAGRAM_SIZE=UDPEndPoint.DATAGRAM_SIZE;
 	
-	    /**
-	     * key for a system property defining the CC class to be used
-	     * @see CongestionControl
-	     */
-	    public static String CC_CLASS="udt.congestioncontrol.class";
+        ///**
+        // * key for a system property defining the CC class to be used
+        // * @see CongestionControl
+        // */
+        //public static String CC_CLASS="udt.congestioncontrol.class";
 	
 	    /**
 	     * Buffer size (i.e. datagram size)
@@ -72,28 +72,38 @@ namespace udtCSharp.UDT
 	    protected long mySocketID;
 	
         //private static AtomicLong nextSocketID=new AtomicLong(20+new Random().nextInt(5000));
-	    private volatile long nextSocketID;
+	    private static long nextSocketID = 20;
 
         public UDTSession(String description, Destination destination)
         {
-            Interlocked.Read(ref nextSocketID);
-
+            Random ro = new Random(10);
+            nextSocketID = ro.Next(0,5000) + 20;            
+            
             statistics=new UDTStatistics(description);
-            mySocketID=nextSocketID.incrementAndGet();
+            mySocketID=Interlocked.Increment(ref nextSocketID);
+
             this.destination=destination;
-            this.dgPacket=new DatagramPacket(new byte[0],0,destination.getAddress(),destination.getPort());
-            String clazzP=System.getProperty(CC_CLASS,UDTCongestionControl.class.getName());
-            Object ccObject=null;
-            try
-            {
-                Class<?>clazz=Class.forName(clazzP);
-                ccObject=clazz.getDeclaredConstructor(UDTSession.class).newInstance(this);
-            }catch(Exception e){
-                logger.log(Level.WARNING,"Can't setup congestion control class <"+clazzP+">, using default.",e);
-                ccObject=new UDTCongestionControl(this);
-            }
-            cc=(CongestionControl)ccObject;
-            Log.Write("Using "+cc.getClass().getName());
+            //this.dgPacket=new DatagramPacket(new byte[0],0,destination.getAddress(),destination.getPort());
+            this.dgPacket = new byte[0];
+
+            //UDTCongestionControl _CongestionControl = new UDTCongestionControl();
+            //String clazzP=_CongestionControl.ToString();
+            Object ccObject = null;
+            //try
+            //{
+            //    Class<?>clazz=Class.forName(clazzP);
+            //    ccObject=clazz.getDeclaredConstructor(UDTSession.class).newInstance(this);
+            //}
+            //catch(Exception e)
+            //{
+            //    Log.Write(this.ToString(),"WARNING","Can't setup congestion control class <"+clazzP+">, using default.",e);
+            //    ccObject = new UDTCongestionControl(this);
+            //}
+
+            ccObject = new UDTCongestionControl(this);
+            cc = (CongestionControl)ccObject;
+
+            Log.Write(this.ToString(), "Using " + cc.ToString());
         }
 
 
@@ -203,7 +213,7 @@ namespace udtCSharp.UDT
         [MethodImpl(MethodImplOptions.Synchronized)]
         public long getInitialSequenceNumber()
         {
-            if(initialSequenceNumber==null)
+            if(initialSequenceNumber==0)
             {
                 initialSequenceNumber=1; //TODO must be random?
             }

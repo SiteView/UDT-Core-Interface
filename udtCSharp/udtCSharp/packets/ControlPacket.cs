@@ -7,7 +7,7 @@ using udtCSharp.UDT;
 
 namespace udtCSharp.packets
 {
-    public class ControlPacket : UDTPacket
+    public abstract class ControlPacket : UDTPacket
     {
         protected int controlPacketType;
 
@@ -65,22 +65,12 @@ namespace udtCSharp.packets
             return true;
         }
 
-        public int getControlPacketType()
-        {
-            throw new NotImplementedException();
-        }
-
-        public byte[] getEncoded()
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool forSender()
+        public virtual bool forSender()
         {
             return true;
         }
 
-        public bool isConnectionHandshake()
+        public virtual bool isConnectionHandshake()
         {
             return true;
         }
@@ -121,7 +111,8 @@ namespace udtCSharp.packets
 	    /**
 	     * this method gets the "additional info" for this type of control packet
 	     */
-	    protected long getAdditionalInfo(){
+	    protected virtual long getAdditionalInfo()
+        {
 		    return 0L;
 	    }
 	
@@ -130,7 +121,7 @@ namespace udtCSharp.packets
 	     * from the control parameters
 	     * @return
 	     */
-	    public abstract byte[] encodeControlInformation(); 
+        public abstract byte[] encodeControlInformation(); 
 
 	    /**
 	     * complete header+ControlInformation packet for transmission
@@ -149,7 +140,8 @@ namespace udtCSharp.packets
 		    return result;
 	    }
 
-	    public bool equals(Object obj) {
+	    public virtual bool equals(Object obj) 
+        {
 		    if (this == obj)
 			    return true;
 		    if (obj == null)
@@ -166,7 +158,7 @@ namespace udtCSharp.packets
 		    return true;
 	    }
 
-        public static enum ControlPacketType
+        public enum ControlPacketType
         {
             CONNECTION_HANDSHAKE,
             KEEP_ALIVE,

@@ -31,11 +31,23 @@ namespace udtCSharp.UDT
         //private UDTReceiver receiver;
         //private UDTSender sender;
 	
-        //private final UDTSession session;
+        private UDTSession session;
 
         //private UDTInputStream inputStream;
         //private UDTOutputStream outputStream;
-
+        /**
+         * @param host
+         * @param port
+         * @param endpoint
+         * @throws SocketException,UnknownHostException
+         */
+	    public UDTSocket(UDPEndPoint endpoint, UDTSession session)
+        {
+		    this.endpoint=endpoint;
+		    this.session=session;
+            //this.receiver=new UDTReceiver(session,endpoint);
+            //this.sender=new UDTSender(session,endpoint);
+	    }
 
 
     }

@@ -42,12 +42,12 @@ namespace udtCSharp.UDT
         /// <summary>
         /// 数据长度
         /// </summary>
-	    public static int DATAGRAM_SIZE=1400;
+	    public const int DATAGRAM_SIZE=1400;
 
         /// <summary>
         /// 当前socket 的连接地址
         /// </summary>
-        private IPEndPoint _ipep = new IPEndPoint(IPAddress.Any, 0);
+        public IPEndPoint _ipep = new IPEndPoint(IPAddress.Any, 0);
         /// <summary>
         /// 运程主机的地址
         /// </summary>
@@ -103,7 +103,7 @@ namespace udtCSharp.UDT
             }
             catch (Exception exc)
             {
-                Log.Write(exc);
+                Log.Write(this.GetType().ToString(), exc);
             }
         }
        
@@ -119,7 +119,7 @@ namespace udtCSharp.UDT
             Thread t = new Thread(new ThreadStart(receive));
             t.IsBackground = true;
             t.Start();
-            Log.Write("UDTEndpoint started.");
+            Log.Write(this.ToString(), "UDTEndpoint started.");
         }
 
         private void receive()
@@ -130,7 +130,7 @@ namespace udtCSharp.UDT
             }
             catch (Exception ex)
             {
-                Log.Write("WARNING", "", ex);
+                Log.Write(this.ToString(), "WARNING", ex);
             }
         }
 
@@ -186,7 +186,7 @@ namespace udtCSharp.UDT
         /// <param name="session"></param>
         public void addSession(long destinationID,UDTSession session)
         {
-            Log.Write("Storing session <"+destinationID+">");
+            Log.Write(this.ToString(), "Storing session <" + destinationID + ">");
             this.sessions.Add(destinationID, session);           
         }
 
@@ -244,7 +244,7 @@ namespace udtCSharp.UDT
         private int n=0;
 
         private object thisLock = new object();
-	
+	    public IPEndPoint Remoteinfo = new IPEndPoint(IPAddress.Any, 0);
         protected void doReceive()
         {
             while(!stopped){
@@ -255,9 +255,9 @@ namespace udtCSharp.UDT
                         EndPoint Remote = (EndPoint)sender;
                         //dgSocket.Bind(_ipep);
                         dgSocket.ReceiveFrom(dp,ref Remote);
-					    
-                        sender = (IPEndPoint)Remote;
-                        Destination peer=new Destination(sender.Address,sender.Port);
+
+                        Remoteinfo = (IPEndPoint)Remote;
+                        Destination peer = new Destination(Remoteinfo.Address, Remoteinfo.Port);
 
                         int l=dp.Length;
                         UDTPacket packet=PacketFactory.createPacket(dp,l);
@@ -278,9 +278,9 @@ namespace udtCSharp.UDT
                                     //TODO need to check peer to avoid duplicate server session
                                     if (serverSocketMode)
                                     {
-                                        Log.Write("Pooling new request.");
+                                        Log.Write(this.ToString(), "Pooling new request.");
                                         sessionHandoff.Enqueue(session);
-                                        Log.Write("Request taken for processing.");
+                                        Log.Write(this.ToString(), "Request taken for processing.");
                                     }
                                 }
                                 peer.setSocketID(((ConnectionHandshake)packet).getSocketID());
@@ -305,7 +305,7 @@ namespace udtCSharp.UDT
                             if(session==null){
                                 n++;
                                 if(n%100==1){
-                                    Log.Write("Unknown session <"+dest+"> requested from <"+peer+"> packet type "+packet.getClass().getName());
+                                    Log.Write(this.ToString(),"Unknown session <"+dest+"> requested from <"+peer+"> packet type "+packet.ToString());
                                 }
                             }
                             else
@@ -316,16 +316,16 @@ namespace udtCSharp.UDT
                     }
                     catch(SocketException ex)
                     {
-                         Log.Write("INFO", "",ex);
+                        Log.Write(this.ToString(), "INFO", ex);
                     }
 
                 }catch(Exception ex){
-                     Log.Write("WARNING", "",ex);
+                    Log.Write(this.ToString(), "WARNING", ex);
                 }
             }
         }
 
-        protected void doSend(UDTPacket packet)
+        public void doSend(UDTPacket packet)
         {
             try
             {

@@ -43,7 +43,8 @@ namespace udtCSharp.packets
 	    }
 	
 	    //faster than instanceof...
-	    public bool isConnectionHandshake(){
+        public override bool isConnectionHandshake()
+        {
 		    return true;
 	    }
 	
@@ -111,7 +112,7 @@ namespace udtCSharp.packets
 		    this.socketID = socketID;
 	    }
 	
-	    public byte[] encodeControlInformation()
+	    public override byte[] encodeControlInformation()
         {
 		    try
             {
@@ -141,7 +142,8 @@ namespace udtCSharp.packets
 	    }
 
 
-	    public bool equals(Object obj) {
+        public override bool equals(Object obj)
+        {
 		    if (this == obj)
 			    return true;
 		    if (!base.equals(obj))

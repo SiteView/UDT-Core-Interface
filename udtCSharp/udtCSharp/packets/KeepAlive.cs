@@ -14,7 +14,7 @@ namespace udtCSharp.packets
 	    }
 	
 	
-	    public byte[] encodeControlInformation()
+	    public override byte[] encodeControlInformation()
         {
 		    return null;
 	    }
