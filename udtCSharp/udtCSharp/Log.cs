@@ -78,7 +78,8 @@ namespace udtCSharp
                     m_log.Flush();
                 }
             }
-            catch { }
+            catch 
+            { }
             finally
             {
                 mutex.ReleaseMutex();

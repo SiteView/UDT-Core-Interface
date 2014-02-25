@@ -12,7 +12,7 @@ namespace udtCSharp.UDT
     public abstract class UDTSession
     {
         protected int mode;
-	    protected volatile bool active;
+        public volatile bool active;
 	    private volatile int state=start;
 	    protected volatile UDTPacket lastPacket;
 	

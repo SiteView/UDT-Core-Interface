@@ -26,15 +26,15 @@ namespace udtCSharp.UDT
 	    private UDPEndPoint endpoint;
 
         private volatile bool active;
-	
-        ////processing received data
-        //private UDTReceiver receiver;
-        //private UDTSender sender;
+
+        //processing received data
+        private UDTReceiver receiver;
+        private UDTSender sender;
 	
         private UDTSession session;
 
-        //private UDTInputStream inputStream;
-        //private UDTOutputStream outputStream;
+        private UDTInputStream inputStream;
+        private UDTOutputStream outputStream;
         /**
          * @param host
          * @param port
