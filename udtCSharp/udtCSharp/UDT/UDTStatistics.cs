@@ -165,7 +165,7 @@ namespace udtCSharp.UDT
 	     */
 	    public List<MeanValue>getMetrics()
         {
-		    return Collections.unmodifiableList(metrics);
+		    return metrics;
 	    }
 	
 	    public String toString(){
@@ -185,14 +185,14 @@ namespace udtCSharp.UDT
 		    if(packetArrivalRate>0){
 			    sb.Append("Packet rate: ").Append(packetArrivalRate).Append("/sec., link capacity: ").Append(estimatedLinkCapacity).Append("/sec.\n");
 		    }
-		    if(numberOfMissingDataEvents.get()>0){
-			    sb.Append("Sender without data events: ").Append(numberOfMissingDataEvents.get()).Append("\n");
+		    if(numberOfMissingDataEvents>0){
+			    sb.Append("Sender without data events: ").Append(numberOfMissingDataEvents).Append("\n");
 		    }
-		    if(numberOfCCSlowDownEvents.get()>0){
-			    sb.Append("CC rate slowdown events: ").Append(numberOfCCSlowDownEvents.get()).Append("\n");
+		    if(numberOfCCSlowDownEvents>0){
+			    sb.Append("CC rate slowdown events: ").Append(numberOfCCSlowDownEvents).Append("\n");
 		    }
-		    if(numberOfCCWindowExceededEvents.get()>0){
-			    sb.Append("CC window slowdown events: ").Append(numberOfCCWindowExceededEvents.get()).Append("\n");
+		    if(numberOfCCWindowExceededEvents>0){
+			    sb.Append("CC window slowdown events: ").Append(numberOfCCWindowExceededEvents).Append("\n");
 		    }
 		    sb.Append("CC parameter SND:  ").Append((int)sendPeriod).Append("\n");
 		    sb.Append("CC parameter CWND: ").Append(congestionWindowSize).Append("\n");
@@ -217,34 +217,38 @@ namespace udtCSharp.UDT
 			    if(first)
                 {
 				    first=false;
-				    statsHistory.add(new StatisticsHistoryEntry(true,0,metrics));
-				    initialTime=System.currentTimeMillis();
+				    statsHistory.Add(new StatisticsHistoryEntry(true,0,metrics));
+				    initialTime=System.DateTime.Now.Millisecond;
 			    }
-			    statsHistory.add(new StatisticsHistoryEntry(false,System.currentTimeMillis()-initialTime,metrics));
+                statsHistory.Add(new StatisticsHistoryEntry(false, System.DateTime.Now.Millisecond - initialTime, metrics));
 		    }
 	    }
 
-	    /**
-	     * write saved parameters to disk 
-	     * @param toFile
-	     */
-	    public void writeParameterHistory(File toFile)
+        ///**
+        // * write saved parameters to disk 
+        // * @param toFile
+        // */
+        /// <summary>
+        /// write saved parameters to disk 
+        /// </summary>
+        /// <param name="toFile">文件名称</param>
+	    public void writeParameterHistory(string toFile)
         {
-		    FileWriter fos=new FileWriter(toFile);
+            
+            StreamWriter fos = new StreamWriter(toFile);
 		    try
             {
 			    lock (statsHistory) 
                 {
 				    foreach(StatisticsHistoryEntry s in statsHistory)
                     {
-					    fos.write(s.toString());
-					    fos.write('\n');
+					    fos.WriteLine(s.toString());
 				    }
 			    }
 		    }
             finally
             {
-			    fos.close();
+			    fos.Close();
 		    }
 	    }
 

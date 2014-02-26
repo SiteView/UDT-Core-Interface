@@ -40,10 +40,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Collect.cs" />
+    <Compile Include="Common\CircularArray.cs" />
     <Compile Include="Common\MeanValue.cs" />
     <Compile Include="Common\ReceiveBuffer.cs" />
     <Compile Include="Common\SendFile.cs" />
     <Compile Include="Common\SequenceNumber.cs" />
+    <Compile Include="Common\StatisticsHistoryEntry.cs" />
     <Compile Include="Common\Util.cs" />
     <Compile Include="ICollect.cs" />
     <Compile Include="Log.cs" />
@@ -61,6 +63,13 @@
     <Compile Include="packets\Shutdown.cs" />
     <Compile Include="packets\UserDefined.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Receiver\AckHistoryEntry.cs" />
+    <Compile Include="Receiver\AckHistoryWindow.cs" />
+    <Compile Include="Receiver\PacketHistoryWindow.cs" />
+    <Compile Include="Receiver\PacketPairWindow.cs" />
+    <Compile Include="Receiver\ReceiverLossList.cs" />
+    <Compile Include="Receiver\ReceiverLossListEntry.cs" />
+    <Compile Include="Sender\SenderLossList.cs" />
     <Compile Include="UDT\ClientSession.cs" />
     <Compile Include="UDT\CongestionControl.cs" />
     <Compile Include="UDT\ServerSession.cs" />
@@ -71,6 +80,7 @@
     <Compile Include="UDT\UDTOutputStream.cs" />
     <Compile Include="UDT\UDTPacket.cs" />
     <Compile Include="UDT\UDTReceiver.cs" />
+    <Compile Include="UDT\UDTSender.cs" />
     <Compile Include="UDT\UDTSession.cs" />
     <Compile Include="UDT\UDTSocket.cs" />
     <Compile Include="UDT\UDTStatistics.cs" />
