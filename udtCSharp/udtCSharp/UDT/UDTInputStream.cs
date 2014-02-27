@@ -18,7 +18,7 @@ namespace udtCSharp.UDT
 
         //set to 'false' by the receiver when it gets a shutdown signal from the peer
         //see the noMoreData() method
-        private bool expectMoreData = true;
+        private AtomicInteger expectMoreData = new AtomicInteger(1);
 
         private volatile bool closed = false;
 
@@ -95,14 +95,14 @@ namespace udtCSharp.UDT
 
                 if (read > 0) return read;
                 if (closed) return -1;
-                if (expectMoreData || !receiveBuffer.isEmpty()) return 0;
+                if (expectMoreData.Get() == 1 || !receiveBuffer.isEmpty()) return 0;
                 //no more data
                 return -1;
             }
             catch (Exception ex)
             {
-                return -1;
                 Log.Write(this.ToString(), ex);
+                return -1;
             }
         }
 
@@ -192,7 +192,7 @@ namespace udtCSharp.UDT
         /// </summary>
         protected void noMoreData()
         {
-            expectMoreData = false;
+            expectMoreData.GetAndSet(0);
         }
    
 

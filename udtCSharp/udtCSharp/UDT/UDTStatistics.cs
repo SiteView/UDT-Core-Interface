@@ -15,18 +15,17 @@ namespace udtCSharp.UDT
     /// </summary>
     public class UDTStatistics 
     {
-
-	    private  int numberOfSentDataPackets = 0;
-	    private  int numberOfReceivedDataPackets=0;
-	    private  int numberOfDuplicateDataPackets=0;
-	    private  int numberOfMissingDataEvents= 0;
-	    private  int numberOfNAKSent= 0;
-	    private  int numberOfNAKReceived= 0;
-	    private  int numberOfRetransmittedDataPackets= 0;
-	    private  int numberOfACKSent= 0;
-	    private  int numberOfACKReceived= 0;
-	    private  int numberOfCCSlowDownEvents= 0;
-	    private  int numberOfCCWindowExceededEvents= 0;
+        private  AtomicInteger numberOfSentDataPackets=new AtomicInteger(0);
+	    private  AtomicInteger numberOfReceivedDataPackets=new AtomicInteger(0);
+	    private  AtomicInteger numberOfDuplicateDataPackets=new AtomicInteger(0);
+	    private  AtomicInteger numberOfMissingDataEvents=new AtomicInteger(0);
+	    private  AtomicInteger numberOfNAKSent=new AtomicInteger(0);
+	    private  AtomicInteger numberOfNAKReceived=new AtomicInteger(0);
+	    private  AtomicInteger numberOfRetransmittedDataPackets=new AtomicInteger(0);
+	    private  AtomicInteger numberOfACKSent=new AtomicInteger(0);
+	    private  AtomicInteger numberOfACKReceived=new AtomicInteger(0);
+	    private  AtomicInteger numberOfCCSlowDownEvents=new AtomicInteger(0);
+	    private  AtomicInteger numberOfCCWindowExceededEvents=new AtomicInteger(0);
 
 	    private String componentDescription;
 
@@ -36,89 +35,74 @@ namespace udtCSharp.UDT
 	    private volatile long estimatedLinkCapacity;
 	    private volatile double sendPeriod;
 	    private volatile long congestionWindowSize;
-        
-	    private List<MeanValue>metrics=new List<MeanValue>();
+
+	    private  List<MeanValue> metrics=new List<MeanValue>();
 		
-	    public UDTStatistics(String componentDescription){
+	    public UDTStatistics(String componentDescription)
+        {
 		    this.componentDescription=componentDescription;
 	    }
 
-	    public int getNumberOfSentDataPackets() 
-        {
-		    return numberOfSentDataPackets;
+	    public int getNumberOfSentDataPackets() {
+		    return numberOfSentDataPackets.Get();
 	    }
-	    public int getNumberOfReceivedDataPackets() 
-        {
-		    return numberOfReceivedDataPackets;
+	    public int getNumberOfReceivedDataPackets() {
+		    return numberOfReceivedDataPackets.Get();
 	    }
-	    public int getNumberOfDuplicateDataPackets() 
-        {
-		    return numberOfDuplicateDataPackets;
+	    public int getNumberOfDuplicateDataPackets() {
+		    return numberOfDuplicateDataPackets.Get();
 	    }
-	    public int getNumberOfNAKSent() 
-        {
-		    return numberOfNAKSent;
+	    public int getNumberOfNAKSent() {
+		    return numberOfNAKSent.Get();
 	    }
-	    public int getNumberOfNAKReceived() 
-        {
-		    return numberOfNAKReceived;
+	    public int getNumberOfNAKReceived() {
+		    return numberOfNAKReceived.Get();
 	    }
-	    public int getNumberOfRetransmittedDataPackets() 
-        {
-		    return numberOfRetransmittedDataPackets;
+	    public int getNumberOfRetransmittedDataPackets() {
+		    return numberOfRetransmittedDataPackets.Get();
 	    }
-	    public int getNumberOfACKSent() 
-        {
-		    return numberOfACKSent;
+	    public int getNumberOfACKSent() {
+		    return numberOfACKSent.Get();
 	    }
-	    public int getNumberOfACKReceived() 
-        {
-		    return numberOfACKReceived;
+	    public int getNumberOfACKReceived() {
+		    return numberOfACKReceived.Get();
 	    }
-	    public void incNumberOfSentDataPackets() 
-        {
-		    Interlocked.Increment(ref numberOfSentDataPackets);
+	    public void incNumberOfSentDataPackets() {
+		    numberOfSentDataPackets.IncrementAndGet();
 	    }
-	    public void incNumberOfReceivedDataPackets() 
-        {
-		    Interlocked.Increment(ref numberOfReceivedDataPackets);
+	    public void incNumberOfReceivedDataPackets() {
+		    numberOfReceivedDataPackets.IncrementAndGet();
 	    }
-	    public void incNumberOfDuplicateDataPackets()
-        {
-		    Interlocked.Increment(ref numberOfDuplicateDataPackets);
+	    public void incNumberOfDuplicateDataPackets() {
+		    numberOfDuplicateDataPackets.IncrementAndGet();
 	    }
-	    public void incNumberOfMissingDataEvents() 
-        {
-		    Interlocked.Increment(ref numberOfMissingDataEvents);
+	    public void incNumberOfMissingDataEvents() {
+		    numberOfMissingDataEvents.IncrementAndGet();
 	    }
-	    public void incNumberOfNAKSent() 
-        {
-		    Interlocked.Increment(ref numberOfNAKSent);
+	    public void incNumberOfNAKSent() {
+		    numberOfNAKSent.IncrementAndGet();
 	    }
-	    public void incNumberOfNAKReceived() 
-        {
-		   Interlocked.Increment(ref numberOfNAKReceived);
+	    public void incNumberOfNAKReceived() {
+		    numberOfNAKReceived.IncrementAndGet();
 	    }
-	    public void incNumberOfRetransmittedDataPackets() 
-        {
-		    Interlocked.Increment(ref numberOfRetransmittedDataPackets);
+	    public void incNumberOfRetransmittedDataPackets() {
+		    numberOfRetransmittedDataPackets.IncrementAndGet();
 	    }
 
-	    public void incNumberOfACKSent() 
-        {
-		   Interlocked.Increment(ref numberOfACKSent);
+	    public void incNumberOfACKSent() {
+		    numberOfACKSent.IncrementAndGet();
 	    }
 
 	    public void incNumberOfACKReceived() {
-		    Interlocked.Increment(ref numberOfACKReceived);
+		    numberOfACKReceived.IncrementAndGet();
 	    }
 
 	    public void incNumberOfCCWindowExceededEvents() {
-		    Interlocked.Increment(ref numberOfCCWindowExceededEvents);
+		    numberOfCCWindowExceededEvents.IncrementAndGet();
 	    }
 
 	    public void incNumberOfCCSlowDownEvents() {
-		    Interlocked.Increment(ref numberOfCCSlowDownEvents);
+		    numberOfCCSlowDownEvents.IncrementAndGet();
 	    }
 
 	    public void setRTT(long rtt, long rttVar){
@@ -185,13 +169,15 @@ namespace udtCSharp.UDT
 		    if(packetArrivalRate>0){
 			    sb.Append("Packet rate: ").Append(packetArrivalRate).Append("/sec., link capacity: ").Append(estimatedLinkCapacity).Append("/sec.\n");
 		    }
-		    if(numberOfMissingDataEvents>0){
+		    if(numberOfMissingDataEvents.Get()>0){
 			    sb.Append("Sender without data events: ").Append(numberOfMissingDataEvents).Append("\n");
 		    }
-		    if(numberOfCCSlowDownEvents>0){
+            if (numberOfCCSlowDownEvents.Get() > 0)
+            {
 			    sb.Append("CC rate slowdown events: ").Append(numberOfCCSlowDownEvents).Append("\n");
 		    }
-		    if(numberOfCCWindowExceededEvents>0){
+            if (numberOfCCWindowExceededEvents.Get() > 0)
+            {
 			    sb.Append("CC window slowdown events: ").Append(numberOfCCWindowExceededEvents).Append("\n");
 		    }
 		    sb.Append("CC parameter SND:  ").Append((int)sendPeriod).Append("\n");

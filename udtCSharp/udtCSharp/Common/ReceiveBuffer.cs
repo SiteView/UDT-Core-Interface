@@ -26,8 +26,8 @@ namespace udtCSharp.Common
 	    private long highestReadSequenceNumber;
 
 	    //number of chunks
-	    //private AtomicInteger numValidChunks=new AtomicInteger(0);
-        private int numValidChunks = 0;
+        private AtomicInteger numValidChunks = new AtomicInteger(0);
+       
 	    //lock and condition for poll() with timeout	   
         
         /// <summary>
@@ -49,7 +49,7 @@ namespace udtCSharp.Common
 
 	    public bool offer(AppData data)
         {
-            if (numValidChunks == size)
+            if (numValidChunks.Get() == size)
             {
 			    return false;
 		    }
@@ -63,7 +63,7 @@ namespace udtCSharp.Common
                 int offset = (int)SequenceNumber.seqOffset(initialSequenceNumber, seq);
                 int insert = offset % size;
                 buffer[insert] = data;
-                Interlocked.Increment(ref numValidChunks);
+                numValidChunks.IncrementAndGet();
 
                 return true;
             }
@@ -100,7 +100,7 @@ namespace udtCSharp.Common
             {
 			    for (;;) 
                 {
-                    if (numValidChunks != 0) 
+                    if (numValidChunks.Get() != 0) 
                     {
 					    return poll();
 				    }
@@ -123,7 +123,7 @@ namespace udtCSharp.Common
         /// <returns></returns>
 	    public AppData poll()
         {
-            if (numValidChunks == 0)
+            if (numValidChunks.Get() == 0)
             {
 			    return null;
 		    }
@@ -151,12 +151,12 @@ namespace udtCSharp.Common
 		    buffer[readPosition]=null;
 		    readPosition++;
 		    if(readPosition==size)readPosition=0;
-            Interlocked.Decrement(ref numValidChunks);
+            numValidChunks.DecrementAndGet();
 	    }
 
 	    public bool isEmpty()
         {
-		    return numValidChunks ==0;
+            return numValidChunks.Get() == 0; ;
 	    }
     }
 }
