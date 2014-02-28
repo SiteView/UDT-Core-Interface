@@ -29,14 +29,14 @@ namespace udtCSharp.UDT
 
 	    private String componentDescription;
 
-	    private volatile long roundTripTime;
-	    private volatile long roundTripTimeVariance;
-	    private volatile long packetArrivalRate;
-	    private volatile long estimatedLinkCapacity;
-	    private volatile double sendPeriod;
-	    private volatile long congestionWindowSize;
+	    private volatile int roundTripTime;
+	    private volatile int roundTripTimeVariance;
+	    private volatile int packetArrivalRate;
+	    private volatile int estimatedLinkCapacity;
+	    private volatile float sendPeriod;
+        private volatile int congestionWindowSize;
 
-	    private  List<MeanValue> metrics=new List<MeanValue>();
+	    private  List<MeanValue> metrics=new List<MeanValue>();       
 		
 	    public UDTStatistics(String componentDescription)
         {
@@ -106,17 +106,17 @@ namespace udtCSharp.UDT
 	    }
 
 	    public void setRTT(long rtt, long rttVar){
-		    this.roundTripTime=rtt;
-		    this.roundTripTimeVariance=rttVar;
+		    this.roundTripTime=(int)rtt;
+            this.roundTripTimeVariance = (int)rttVar;
 	    }
 
 	    public void setPacketArrivalRate(long rate, long linkCapacity){
-		    this.packetArrivalRate=rate;
-		    this.estimatedLinkCapacity=linkCapacity;
+            this.packetArrivalRate = (int)rate;
+            this.estimatedLinkCapacity = (int)linkCapacity;
 	    }
 
 	    public void setSendPeriod(double sendPeriod){
-		    this.sendPeriod=sendPeriod;
+            this.sendPeriod = (int)sendPeriod;
 	    }
 
 	    public double getSendPeriod(){
@@ -128,7 +128,7 @@ namespace udtCSharp.UDT
 	    }
 
 	    public void setCongestionWindowSize(long congestionWindowSize) {
-		    this.congestionWindowSize = congestionWindowSize;
+		    this.congestionWindowSize =(int)congestionWindowSize;
 	    }
 
 	    public long getPacketArrivalRate(){
@@ -200,13 +200,18 @@ namespace udtCSharp.UDT
         {
 		    lock (statsHistory) 
             {
+                //( System.DateTime.UtcNow.Ticks - new DateTime(1970, 1, 1, 0, 0, 0).Ticks)/10000;
+                //如果要得到Java中 System.currentTimeMillis() 一样的结果，就可以写成 上面那样，也可以这样写：
+                // TimeSpan ts=new TimeSpan( System.DateTime.UtcNow.Ticks - new DateTime(1970, 1, 1, 0, 0, 0).Ticks);
+                //(long)ts.TotalMilliseconds;
+                TimeSpan ts = new TimeSpan(System.DateTime.UtcNow.Ticks - new DateTime(1970, 1, 1, 0, 0, 0).Ticks);
 			    if(first)
                 {
 				    first=false;
-				    statsHistory.Add(new StatisticsHistoryEntry(true,0,metrics));
-				    initialTime=System.DateTime.Now.Millisecond;
+				    statsHistory.Add(new StatisticsHistoryEntry(true,0,metrics));                   
+                    initialTime = (long)ts.TotalMilliseconds;
 			    }
-                statsHistory.Add(new StatisticsHistoryEntry(false, System.DateTime.Now.Millisecond - initialTime, metrics));
+                statsHistory.Add(new StatisticsHistoryEntry(false, (long)ts.TotalMilliseconds - initialTime, metrics));
 		    }
 	    }
 

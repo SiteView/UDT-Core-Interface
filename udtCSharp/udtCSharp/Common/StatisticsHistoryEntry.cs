@@ -37,7 +37,7 @@ namespace udtCSharp.Common
 		    }
 		    else{
 			    for(int i=0;i<metricValues.Length;i++){
-				    metricValues[i]=metrics.[i].getFormattedMean();
+				    metricValues[i]=metrics[i].getFormattedMean();
 			    }
 		    }
 		    this.values=metricValues;

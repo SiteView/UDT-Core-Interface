@@ -15,6 +15,7 @@ namespace udtCSharp.Sender
 
         /// <summary>
         /// create a new sender lost list
+        /// 创建一个新(发送过程中的)丢失数据包列表
         /// </summary>
 	    public SenderLossList()
         {

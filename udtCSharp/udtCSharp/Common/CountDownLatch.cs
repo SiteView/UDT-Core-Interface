@@ -16,7 +16,9 @@ namespace udtCSharp.Common
         {
             this.counts = counts;
         }
-
+        /// <summary>
+        /// 线程进入就绪队列之前等待。
+        /// </summary>
         public void Await()
         {
             lock (lockobj)
@@ -27,8 +29,24 @@ namespace udtCSharp.Common
                 }
             }
         }
+        /// <summary>
+        /// 线程进入就绪队列之前等待的毫秒数。
+        /// </summary>
+        /// <param name="timeout"></param>
+        public void Await(int timeout)
+        {
+            lock (lockobj)
+            {
+                while (counts > 0)
+                {
+                    Monitor.Wait(lockobj,timeout);
+                }
+            }
+        }
 
-
+        /// <summary>
+        /// 通知所有的等待线程对象状态的更改。
+        /// </summary>
         public void CountDown()
         {
             lock (lockobj)

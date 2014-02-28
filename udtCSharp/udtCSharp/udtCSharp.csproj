@@ -44,6 +44,7 @@
     <Compile Include="Common\AtomicReference.cs" />
     <Compile Include="Common\CircularArray.cs" />
     <Compile Include="Common\CountDownLatch.cs" />
+    <Compile Include="Common\MeanThroughput.cs" />
     <Compile Include="Common\MeanValue.cs" />
     <Compile Include="Common\ReceiveBuffer.cs" />
     <Compile Include="Common\SendFile.cs" />

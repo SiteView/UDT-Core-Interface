@@ -23,7 +23,11 @@ namespace udtCSharp.Common
 	    */
 	    public static long getCurrentTime()
         {
-		    return System.DateTime.Now.Millisecond / 1000;
+            //1纳秒=1000 皮秒　
+            //1纳秒 =0.001  微秒
+            //1纳秒=0.000001 毫秒
+            //1纳秒=0.00000 0001秒
+		    return System.DateTime.Now.Millisecond * 100000 / 1000;
 	    }
 	
 	

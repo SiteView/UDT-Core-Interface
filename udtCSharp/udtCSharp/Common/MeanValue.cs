@@ -23,22 +23,24 @@ namespace udtCSharp.Common
 	    private String msg;
 	
 	    private String name;
-	
-        //public MeanValue(String name)
-        //{
-        //    this(name, false, 64);
-        //}
-	
-        //public MeanValue(String name, bool verbose)
-        //{
-        //    this(name, verbose, 64);
-        //}	
+
+        public MeanValue(String name)
+            : this(name, false, 64)
+        {
+            ;
+        }
+
+        public MeanValue(String name, bool verbose)
+            : this(name, verbose, 64)
+        {
+            ;
+        }	
 
 	    public MeanValue(String name, bool verbose, int nValue)
         {
-            //format=NumberFormat.getNumberInstance(Locale.ENGLISH);
-            //format.setMaximumFractionDigits(2);
-            //format.setGroupingUsed(false);
+            //format=NumberFormat.getNumberInstance(Locale.ENGLISH);//返回指定语言环境的通用数值格式。
+            //format.setMaximumFractionDigits(2);//保留两位小数
+            //format.setGroupingUsed(false);//设置此格式中是否使用分组。
 		    this.verbose=verbose;
 		    this.nValue=nValue;
 		    this.name=name;
@@ -50,19 +52,25 @@ namespace udtCSharp.Common
 		    n++;
 		    if(verbose &&  n % nValue == 0)
             {
-			    if(msg!=null)Log.Write(this.ToString(), msg+" "+getFormattedMean());
-                else Log.Write(this.ToString(), name + getFormattedMean());
+			    if(msg!=null)
+                    Log.Write(this.ToString(), msg+" "+getFormattedMean());
+                else
+                    Log.Write(this.ToString(), name + getFormattedMean());
 		    }
 	    }
 	
-	    public double getMean()
+	    public virtual double getMean()
         {
 		    return mean;
 	    }
 	
+        /// <summary>
+        /// 返回一个保留两位小数的字符串
+        /// </summary>
+        /// <returns></returns>
 	    public String getFormattedMean()
         {
-		    return getMean().ToString();
+		    return Math.Round(getMean(),2).ToString();
 	    }
 	
 	    public void clear()

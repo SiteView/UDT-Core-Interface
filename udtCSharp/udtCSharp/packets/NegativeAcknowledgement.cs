@@ -195,6 +195,7 @@ namespace udtCSharp.packets
             catch (Exception e) 
             {
 			    // can't happen
+                Log.Write(this.ToString(), "can't happen", e);
 			    return null;
 		    }
 	    }
