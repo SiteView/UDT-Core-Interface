@@ -62,9 +62,7 @@ namespace udtCSharp.UDT
         private AppData currentChunk = null;
         //offset into currentChunk
         int offset = 0;
-
-      
-        public override int Read(byte[] target, int offset, int count)
+        public override int Read(byte[] target, int offsettemp, int count)
         {
             try
             {

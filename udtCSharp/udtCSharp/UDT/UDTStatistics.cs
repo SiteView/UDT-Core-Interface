@@ -215,10 +215,6 @@ namespace udtCSharp.UDT
 		    }
 	    }
 
-        ///**
-        // * write saved parameters to disk 
-        // * @param toFile
-        // */
         /// <summary>
         /// write saved parameters to disk 
         /// </summary>

@@ -91,22 +91,50 @@ namespace udtCSharp.Common
 		    copy(source,target,-1, false);
 	    }
 	
-	    /**
-	        * copy input data from the source stream to the target stream
-	        * @param source - input stream to read from
-	        * @param target - output stream to write to
-	        * @param size - how many bytes to copy (-1 for no limit)
-	        * @param flush - whether to flush after each write
-	        * @throws IOException
-	        */
-        public static void copy(Stream source, Stream target, long size, bool flush)
+        ///**
+        //    * copy input data from the source stream to the target stream
+        //    * @param source - input stream to read from
+        //    * @param target - output stream to write to
+        //    * @param size - how many bytes to copy (-1 for no limit)
+        //    * @param flush - whether to flush after each write
+        //    * @throws IOException
+        //    */
+        /// <summary>
+        /// copy input data from the source stream to the target stream
+        /// </summary>
+        /// <param name="source">input stream to read from</param>
+        /// <param name="target">output stream to write to</param>
+        /// <param name="size">要接收的总长度</param>
+        /// <param name="flush">每次写入后是否清除此流的缓冲区</param>
+        public static void copy(UDTInputStream source, FileStream target, long size, bool flush)
         {
-            byte[] buf = new byte[source.Length];		   
-            source.Read(buf, 0, buf.Length);
-            target.Write(buf, 0, buf.Length);
-            if (flush) target.Flush();
-            source.Close();
-            target.Close();
+            //byte[] buf = new byte[source.Length];		   
+            //source.Read(buf, 0, buf.Length);
+            //target.Write(buf, 0, buf.Length);
+            //if (flush) target.Flush();
+            //source.Close();
+            //target.Close();
+            try
+            {
+                byte[] buf = new byte[8 * 65536];
+                int c;
+                int read = 0;
+                while (true)
+                {
+                    c = source.Read(buf, 0, buf.Length);
+                    if (c < 0) break;
+                    read += c;
+                    //System.out.println("writing <"+c+"> bytes");
+                    target.Write(buf, 0, c);
+                    if (flush) target.Flush();
+                    if (read >= size && size > -1) break;
+                }
+                if (!flush) target.Flush();
+            }
+            catch (Exception exc)
+            {
+                Log.Write("ReceiveFile", exc);
+            }
 	    }
 	
 	    /**
@@ -142,6 +170,33 @@ namespace udtCSharp.Common
 		    }
 		    return hexString.ToString();
 	    }
+
+        public static long decode(byte[] data, int start)
+        {
+            long result = (data[start + 3] & 0xFF) << 24
+                         | (data[start + 2] & 0xFF) << 16
+                         | (data[start + 1] & 0xFF) << 8
+                         | (data[start] & 0xFF);
+            return result;
+        }
+
+        public static byte[] encode(long value)
+        {
+            byte m4 = (byte)(value >> 24);
+            byte m3 = (byte)(value >> 16);
+            byte m2 = (byte)(value >> 8);
+            byte m1 = (byte)(value);
+            return new byte[] { m1, m2, m3, m4 };
+        }
+
+        public static byte[] encode64(long value)
+        {
+            byte m4 = (byte)(value >> 24);
+            byte m3 = (byte)(value >> 16);
+            byte m2 = (byte)(value >> 8);
+            byte m1 = (byte)(value);
+            return new byte[] { m1, m2, m3, m4, 0, 0, 0, 0 };
+        }
 	
     }
 }

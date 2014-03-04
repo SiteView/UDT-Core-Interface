@@ -215,7 +215,7 @@ namespace udtCSharp.UDT
         /// 从队列中取出一个UDTSession会话
         /// </summary>      
         /// <returns></returns>
-        protected UDTSession accept()
+        public UDTSession accept()
         {
             try
             {

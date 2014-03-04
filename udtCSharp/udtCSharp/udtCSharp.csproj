@@ -48,6 +48,7 @@
     <Compile Include="Common\MeanThroughput.cs" />
     <Compile Include="Common\MeanValue.cs" />
     <Compile Include="Common\ReceiveBuffer.cs" />
+    <Compile Include="Common\ReceiveFile.cs" />
     <Compile Include="Common\SendFile.cs" />
     <Compile Include="Common\SequenceNumber.cs" />
     <Compile Include="Common\StatisticsHistoryEntry.cs" />
@@ -86,6 +87,7 @@
     <Compile Include="UDT\UDTPacket.cs" />
     <Compile Include="UDT\UDTReceiver.cs" />
     <Compile Include="UDT\UDTSender.cs" />
+    <Compile Include="UDT\UDTServerSocket.cs" />
     <Compile Include="UDT\UDTSession.cs" />
     <Compile Include="UDT\UDTSocket.cs" />
     <Compile Include="UDT\UDTStatistics.cs" />
