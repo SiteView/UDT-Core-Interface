@@ -148,7 +148,7 @@ namespace udtCSharp.UDT
         /// <param name="sequenceNumber"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        protected bool haveNewData(long sequenceNumber, byte[] data)
+        public bool haveNewData(long sequenceNumber, byte[] data)
         {
             return receiveBuffer.offer(new AppData(sequenceNumber, data));
         }

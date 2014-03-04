@@ -42,6 +42,7 @@
     <Compile Include="Collect.cs" />
     <Compile Include="Common\AtomicInteger.cs" />
     <Compile Include="Common\AtomicReference.cs" />
+    <Compile Include="Common\ByteBuffer.cs" />
     <Compile Include="Common\CircularArray.cs" />
     <Compile Include="Common\CountDownLatch.cs" />
     <Compile Include="Common\MeanThroughput.cs" />

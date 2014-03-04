@@ -99,12 +99,13 @@ namespace udtCSharp.UDT
         {
             try
             {
-		        return clientSession.getSocket().getInputStream().read(data);
+                //return clientSession.getSocket().getInputStream().Read(data);
+                return clientSession.getSocket().getInputStream().Read(data, 0, data.Length);
             }
             catch(Exception exc)
             {
-                return 0;
                 Log.Write(this.ToString(),exc);
+                return 0;
             }
 	    }
 

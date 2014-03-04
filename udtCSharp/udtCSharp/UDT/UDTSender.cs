@@ -199,7 +199,8 @@ namespace udtCSharp.UDT
         /// <param name="units"></param>
         /// <returns>@return <code>true</code>if the packet was added, <code>false</code> if the packet could not be added because the queue was full</returns>
         //protected boolean sendUdtPacket(DataPacket p, int timeout, TimeUnit units)//java
-	    protected bool sendUdtPacket(DataPacket p)
+        //public bool sendUdtPacket(DataPacket p)
+        public bool sendUdtPacket(DataPacket p, int timeout)
         {
             try
             {
@@ -220,7 +221,7 @@ namespace udtCSharp.UDT
         /// 从对等服务器接收数据包
 	    /// </summary>
 	    /// <param name="p"></param>
-	    protected void receive(UDTPacket p)
+	    public void receive(UDTPacket p)
         {
             try
             {
@@ -493,12 +494,12 @@ namespace udtCSharp.UDT
 		    return lastAckSequenceNumber;
 	    }
 
-	    bool haveAcknowledgementFor(long sequenceNumber)
+	    public bool haveAcknowledgementFor(long sequenceNumber)
         {
 		    return SequenceNumber.compare(sequenceNumber,lastAckSequenceNumber)<=0;
 	    }
 
-	    bool isSentOut(long sequenceNumber)
+	    public bool isSentOut(long sequenceNumber)
         {
 		    return SequenceNumber.compare(largestSentSequenceNumber,sequenceNumber)>=0;
 	    }

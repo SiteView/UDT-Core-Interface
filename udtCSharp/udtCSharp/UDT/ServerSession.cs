@@ -104,10 +104,7 @@ namespace udtCSharp.UDT
 				    }
 			    }
 			    return;
-
 		    }
-
-
 	    }
 
 	    /**
