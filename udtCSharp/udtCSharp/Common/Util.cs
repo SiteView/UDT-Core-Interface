@@ -86,21 +86,14 @@ namespace udtCSharp.Common
 	    * @param target - output stream to write to
 	    * @throws IOException
 	    */
-        public static void copy(Stream source, Stream target)
+        public static void copy(UDTInputStream source, FileStream target)
         {
 		    copy(source,target,-1, false);
 	    }
 	
-        ///**
-        //    * copy input data from the source stream to the target stream
-        //    * @param source - input stream to read from
-        //    * @param target - output stream to write to
-        //    * @param size - how many bytes to copy (-1 for no limit)
-        //    * @param flush - whether to flush after each write
-        //    * @throws IOException
-        //    */
         /// <summary>
         /// copy input data from the source stream to the target stream
+        /// 用在接收文件
         /// </summary>
         /// <param name="source">input stream to read from</param>
         /// <param name="target">output stream to write to</param>
@@ -108,12 +101,6 @@ namespace udtCSharp.Common
         /// <param name="flush">每次写入后是否清除此流的缓冲区</param>
         public static void copy(UDTInputStream source, FileStream target, long size, bool flush)
         {
-            //byte[] buf = new byte[source.Length];		   
-            //source.Read(buf, 0, buf.Length);
-            //target.Write(buf, 0, buf.Length);
-            //if (flush) target.Flush();
-            //source.Close();
-            //target.Close();
             try
             {
                 byte[] buf = new byte[8 * 65536];
@@ -124,7 +111,7 @@ namespace udtCSharp.Common
                     c = source.Read(buf, 0, buf.Length);
                     if (c < 0) break;
                     read += c;
-                    //System.out.println("writing <"+c+"> bytes");
+                    ///Log.Write("writing <"+c+"> bytes");
                     target.Write(buf, 0, c);
                     if (flush) target.Flush();
                     if (read >= size && size > -1) break;
@@ -133,9 +120,59 @@ namespace udtCSharp.Common
             }
             catch (Exception exc)
             {
-                Log.Write("ReceiveFile", exc);
+                Log.Write("copy-ReceiveFile", exc);
             }
 	    }
+
+        /// <summary>
+        /// copy input data from the source stream to the target stream
+        /// 用在发送文件
+        /// </summary>
+        /// <param name="source">文件流</param>
+        /// <param name="target">output stream to write to</param>
+        /// <param name="size">要接收的总长度</param>
+        /// <param name="flush">每次写入后是否清除此流的缓冲区</param>
+        public static void copySend(FileStream source, UDTOutputStream target, long size, bool flush)
+        {
+            try
+            {
+                byte[] filebuf = new byte[source.Length];
+                source.Read(filebuf, 0, (int)source.Length);
+
+                //可以读取的长度
+                int numBytesToRead = (int)source.Length;
+                //已经读取的长度
+                int numBytesRead = 0;
+
+                while (true)
+                {
+                    int len = 0;
+                    len = Math.Min(512 * 1024, numBytesToRead);
+                    if (len == 0)
+                        break;
+                    byte[] buf = new byte[len];
+                    Array.Copy(filebuf, numBytesRead, buf, 0, len);
+                    //Log.Write("writing <"+len+"> bytes");
+                    target.Write(buf, 0, len);
+
+                    numBytesRead += len;
+                    numBytesToRead -= len;
+
+                    if (flush) 
+                        target.Flush();
+                }
+                if (!flush)
+                {
+                    target.Flush();
+                }
+                source.Close();
+            }
+            catch (Exception exc)
+            {
+                source.Close();
+                Log.Write("copySend-SendFile", exc);
+            }
+        }
 	
 	    /**
 	    * perform UDP hole punching to the specified client by sending 

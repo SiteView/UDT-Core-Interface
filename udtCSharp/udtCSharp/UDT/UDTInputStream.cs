@@ -62,6 +62,7 @@ namespace udtCSharp.UDT
         private AppData currentChunk = null;
         //offset into currentChunk
         int offset = 0;
+
         public override int Read(byte[] target, int offsettemp, int count)
         {
             try
@@ -75,14 +76,14 @@ namespace udtCSharp.UDT
                     Array.Copy(data, offset, target, read, length);
                     read += length;
                     offset += length;
-                    //check if chunk has been fully read
+                    //check if chunk has been fully read 检查已充分阅读块
                     if (offset >= data.Length)
                     {
                         currentChunk = null;
                         offset = 0;
                     }
 
-                    //if no more space left in target, exit now
+                    //如果target没有留下更多的空间目标，现在退出
                     if (read == target.Length)
                     {
                         return read;

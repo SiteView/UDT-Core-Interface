@@ -27,9 +27,9 @@ namespace udtCSharp.Common
 	    private string localFile;
         //private NumberFormat format;
 
-        private static bool verbose = false;
-	    private static String localIP=null;
-	    private static int localPort=-1;
+        private bool verbose = false;
+	    private String localIP=null;
+	    private int localPort=-1;
 	
 	    public ReceiveFile(String serverHost, int serverPort, String remoteFile, String localFile)
         {
@@ -123,29 +123,37 @@ namespace udtCSharp.Common
 			    Log.Write(this.ToString(),"RunReceive",ex);
 		    }
 	    }
-	
-	
-	    public static void main(String[] fullArgs)
+
+
+        public static bool Main_Receive(String[] fullArgs)
         {
-            //int serverPort=65321;
-            //String serverHost="localhost";
-            //String remoteFile="";
-            //String localFile="";
-		
-            //String[] args=parseOptions(fullArgs);
-		
-            //try{
-            //    serverHost=args[0];
-            //    serverPort=Integer.parseInt(args[1]);
-            //    remoteFile=args[2];
-            //    localFile=args[3];
-            //}catch(Exception ex){
-            //    usage();
-            //    System.exit(1);
-            //}
-		
-            //ReceiveFile rf=new ReceiveFile(serverHost,serverPort,remoteFile, localFile);
-            //rf.run();
+            int serverPort = 65321;
+            String serverHost = "localhost";
+            String remoteFile = "";
+            String localFile = "";
+
+            //String[] args = parseOptions(fullArgs);
+
+            try
+            {
+                serverHost = fullArgs[0];
+                serverPort = int.Parse(fullArgs[1]);
+                remoteFile = fullArgs[2];
+                localFile = fullArgs[3];
+
+                ReceiveFile rf = new ReceiveFile(serverHost, serverPort, remoteFile, localFile);
+                //rf.RunReceive();
+                Thread _thread = new Thread(new ThreadStart(rf.RunReceive));
+                _thread.IsBackground = true;
+                _thread.Start();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                usage();
+                Log.Write("Main_Receive", ex);
+                return false;
+            }
 	    }
 	
 	    public static void usage()
