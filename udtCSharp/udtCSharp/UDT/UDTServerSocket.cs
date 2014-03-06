@@ -31,7 +31,7 @@ namespace udtCSharp.UDT
         {
             try
             {
-		        endpoint=new UDPEndPoint(localAddress,port);
+		        endpoint=new UDPEndPoint(localAddress,port);//127.0.0.1 65321
 		        Log.Write(this.ToString(),"Created server endpoint on port "+endpoint.getLocalPort());
             }
             catch(Exception exc)
@@ -42,6 +42,7 @@ namespace udtCSharp.UDT
 
 	    /// <summary>
 	    /// starts a server on localhost
+        /// Dns.GetHostEntry(Dns.GetHostName()).AddressList[0]
 	    /// </summary>
 	    /// <param name="port"></param>
 	    public UDTServerSocket(int port):this(Dns.GetHostEntry(Dns.GetHostName()).AddressList[0],port)

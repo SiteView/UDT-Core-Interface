@@ -20,14 +20,21 @@ namespace udtCSharp.UDT
             try
             {
 		        //create endpoint
-		        clientEndpoint=new UDPEndPoint(address,localport);
+		        clientEndpoint=new UDPEndPoint(address,localport);//127.0.0.1 55321
 		        Log.Write(this.ToString(),"Created client endpoint on port "+localport);
             }
             catch(Exception exc)
             {
                 Log.Write(this.ToString(),exc);
             }
-	    }	   
+	    }
+
+        public UDTClient(IPAddress address)
+        {
+		    //create endpoint
+		    clientEndpoint = new UDPEndPoint(address);
+            Log.Write(this.ToString(),"Created client endpoint on port " + clientEndpoint.getLocalPort());
+	    }
 
 	    public UDTClient(UDPEndPoint endpoint)
         {
@@ -39,8 +46,8 @@ namespace udtCSharp.UDT
         /// establishes a connection to the given server. 
         /// Starts the sender thread.
         /// </summary>
-        /// <param name="host"></param>
-        /// <param name="port"></param>
+        /// <param name="host">127.0.0.1</param>
+        /// <param name="port">65321</param>
 	    public void connect(String host, int port)
         {
             try

@@ -28,8 +28,14 @@ namespace udtCSharp.Common
         //private NumberFormat format;
 
         private bool verbose = false;
-	    private String localIP=null;
-	    private int localPort=-1;
+        /// <summary>
+        /// 客户端IP
+        /// </summary>
+	    private String localIP= "127.0.0.1";
+        /// <summary>
+        /// 客户端端口
+        /// </summary>
+        private int localPort = 55321;
 	
 	    public ReceiveFile(String serverHost, int serverPort, String remoteFile, String localFile)
         {
@@ -47,7 +53,24 @@ namespace udtCSharp.Common
 		    try
             {
 			    UDTReceiver.connectionExpiryDisabled=true;
-			    IPAddress myHost = localIP !=null?IPAddress.Parse(localIP):Dns.GetHostEntry(Dns.GetHostName()).AddressList[0];
+                IPAddress myHost = null;
+                if (localIP != "")
+                {
+                    myHost = IPAddress.Parse(localIP);
+                }
+                else
+                {
+                    string hostname = Dns.GetHostName();
+                    IPHostEntry hostip = Dns.GetHostEntry(hostname);
+                    foreach (IPAddress ipaddress in hostip.AddressList)
+                    {
+                        if (ipaddress.ToString().IndexOf(':') < 0)//存在IPV6的地址，所以要判断
+                        {
+                            myHost = ipaddress;
+                            break;
+                        }
+                    }
+                }
 			    UDTClient client = new UDTClient(myHost,localPort);
 			    client.connect(serverHost, serverPort);
 			    UDTInputStream inputStream = client.getInputStream();

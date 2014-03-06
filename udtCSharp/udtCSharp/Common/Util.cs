@@ -103,7 +103,7 @@ namespace udtCSharp.Common
         {
             try
             {
-                byte[] buf = new byte[8 * 65536];
+                byte[] buf = new byte[512 * 1024];
                 int c;
                 int read = 0;
                 while (true)

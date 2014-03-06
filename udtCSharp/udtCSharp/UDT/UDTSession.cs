@@ -5,6 +5,9 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Runtime.CompilerServices;
+using System.Net;
+using System.Net.Sockets;
+
 using udtCSharp.packets;
 
 namespace udtCSharp.UDT
@@ -33,8 +36,9 @@ namespace udtCSharp.UDT
 	
         protected CongestionControl cc;
 	
-        ////cache dgPacket (peer stays the same always)
-        private byte[] dgPacket;
+        //cache dgPacket (peer stays the same always)
+        //private byte[] dgPacket;
+        private IPEndPoint dgPacket;
 
 	    /**
 	     * flow window size, i.e. how many data packets are
@@ -76,15 +80,16 @@ namespace udtCSharp.UDT
 
         public UDTSession(String description, Destination destination)
         {
-            Random ro = new Random(10);
-            nextSocketID = ro.Next(0,5000) + 20;            
+            Random ro = new Random((int) DateTime.Now.Ticks & 0x0000FFFF);
+            nextSocketID = ro.Next(0,5000) + 20;
             
             statistics=new UDTStatistics(description);
             mySocketID=Interlocked.Increment(ref nextSocketID);
 
             this.destination=destination;
             //this.dgPacket=new DatagramPacket(new byte[0],0,destination.getAddress(),destination.getPort());
-            this.dgPacket = new byte[0];
+            //this.dgPacket = new byte[0];
+            this.dgPacket = new IPEndPoint(destination.getAddress(), destination.getPort());
 
             //UDTCongestionControl _CongestionControl = new UDTCongestionControl();
             //String clazzP=_CongestionControl.ToString();
@@ -226,9 +231,10 @@ namespace udtCSharp.UDT
             this.initialSequenceNumber=initialSequenceNumber;
         }
 
-        public byte[] getDatagram()
+        //public byte[] getDatagram()
+        public IPEndPoint getDatagram()
         {
-            return dgPacket;
+            return this.dgPacket;
         }
 
         public String toString()

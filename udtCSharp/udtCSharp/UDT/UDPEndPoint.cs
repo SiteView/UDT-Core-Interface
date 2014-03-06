@@ -48,10 +48,10 @@ namespace udtCSharp.UDT
         /// 当前socket 的连接地址
         /// </summary>
         public IPEndPoint _ipep = new IPEndPoint(IPAddress.Any, 0);
-        /// <summary>
-        /// 运程主机的地址
-        /// </summary>
-        private EndPoint Remote = null;
+        ///// <summary>
+        ///// 运程主机的地址
+        ///// </summary>
+        //private EndPoint Remote = null;
          
         /// <summary>
         /// 在给定的套接字上创建UDPEndPoint
@@ -65,6 +65,17 @@ namespace udtCSharp.UDT
             _ipep = new IPEndPoint(((IPEndPoint)dgSocket.LocalEndPoint).Address, port);
             this.dgSocket.Bind(_ipep);
         }
+
+         /**
+	     * bind to any local port on the given host address
+	     * @param localAddress
+	     * @throws SocketException
+	     * @throws UnknownHostException
+	     */
+	    public UDPEndPoint(IPAddress localAddress):this(localAddress,0)
+        {
+		    ;
+	    }
       
         /// <summary>
         /// 绑定到给定的地址和端口上创建UDPEndPoint
@@ -329,9 +340,9 @@ namespace udtCSharp.UDT
         {
             try
             {
-                byte[] data = packet.getEncoded();                
-                byte[] dgp = packet.getSession().getDatagram();
-                this.dgSocket.SendTo(dgp, Remote);
+                byte[] data = packet.getEncoded();
+                IPEndPoint dgp = packet.getSession().getDatagram();
+                this.dgSocket.SendTo(data, dgp);
             }
             catch
             { }

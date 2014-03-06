@@ -126,7 +126,8 @@ namespace udtCSharp.packets
 	    /**
 	     * complete header+ControlInformation packet for transmission
 	     */	
-	    public byte[] getEncoded(){
+	    public byte[] getEncoded()
+        {
 		    byte[] header=getHeader();
 		    byte[] controlInfo=encodeControlInformation();
 		    byte[] result=controlInfo!=null?

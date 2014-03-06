@@ -24,7 +24,10 @@ namespace udtCSharp.Common
 	    private int serverPort;
 
         private bool verbose = false;
-	    private String localIP=null;
+        /// <summary>
+        /// 服务器IP
+        /// </summary>
+	    private String localIP="127.0.0.1";
 	    private int localPort=-1;
 
 	    //TODO configure pool size
@@ -40,13 +43,31 @@ namespace udtCSharp.Common
 		    try
             {
 			    UDTReceiver.connectionExpiryDisabled=true;
-			    IPAddress myHost=localIP != null?IPAddress.Parse(localIP):Dns.GetHostEntry(Dns.GetHostName()).AddressList[0];
+                IPAddress myHost = null;
+                if (localIP != "")
+                {
+                    myHost = IPAddress.Parse(localIP);
+                }
+                else
+                {
+                    string hostname = Dns.GetHostName();
+                    IPHostEntry hostip = Dns.GetHostEntry(hostname);
+                    foreach (IPAddress ipaddress in hostip.AddressList)
+                    {
+                        if (ipaddress.ToString().IndexOf(':') < 0)//存在IPV6的地址，所以要判断
+                        {
+                            myHost = ipaddress;
+                            break;
+                        }
+                    }
+                }
+                
 			    UDTServerSocket server=new UDTServerSocket(myHost,serverPort);
                 ThreadPool.SetMaxThreads(3, 3);
                 
                 while(true)
                 {
-				    UDTSocket socket=server.Accept();
+				    UDTSocket socket = server.Accept();//
 				    Thread.Sleep(1000);
                     TaskInfo ti = new TaskInfo(socket, verbose);
                     
@@ -72,8 +93,10 @@ namespace udtCSharp.Common
 				ByteBuffer bb= new ByteBuffer(readBuf);
 
 				//read file name info 
-				while(inputStream.Read(readBuf,0,readBuf.Length)==0)
-                       Thread.Sleep(100);
+                while (inputStream.Read(readBuf, 0, readBuf.Length) == 0)
+                {
+                    Thread.Sleep(100);
+                }
 
 				//how many bytes to read for the file name
                 //byte[] len = new byte[4];

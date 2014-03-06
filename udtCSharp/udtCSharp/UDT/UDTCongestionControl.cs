@@ -216,7 +216,8 @@ namespace udtCSharp.UDT
 
 		    long currentMaxSequenceNumber=session.getSocket().getSender().getCurrentSequenceNumber();
 		    // 2)If this NAK starts a new congestion epoch
-		    if(firstBiggestlossSeqNo>lastDecreaseSeqNo){
+		    if(firstBiggestlossSeqNo>lastDecreaseSeqNo)
+            {
 			    // -increase inter-packet interval
 			    packetSendingPeriod = Math.Ceiling(packetSendingPeriod*1.125);
 			    // -Update AvgNAKNum(the average number of NAKs per congestion)
@@ -225,8 +226,8 @@ namespace udtCSharp.UDT
 			    nACKCount=1;
 			    decCount=1;
 
-                Random _random = new Random();
-                int ia = _random.Next(0, 1);
+                Random _random = new Random((int)DateTime.Now.Ticks);
+                int ia = _random.Next(0, 2);
                 decimal da = (averageNACKNum - 1) * ia + 1;
 			    /* - compute DecRandom to a random (average distribution) number between 1 and AvgNAKNum */
                 decreaseRandom = (int)Math.Ceiling(da);
