@@ -276,7 +276,6 @@ namespace udtCSharp.UDT
             return sequenceNumber;
         }
 
-        //@Override
         public int hashCode()
         {
             int prime = 31;
@@ -286,7 +285,6 @@ namespace udtCSharp.UDT
             return result;
         }
 
-        //@Override
         public bool equals(Object obj)
         {
             if (this == obj)

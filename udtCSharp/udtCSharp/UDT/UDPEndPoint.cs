@@ -197,8 +197,15 @@ namespace udtCSharp.UDT
         /// <param name="session"></param>
         public void addSession(long destinationID,UDTSession session)
         {
-            Log.Write(this.ToString(), "Storing session <" + destinationID + ">");
-            this.sessions.Add(destinationID, session);           
+            try
+            {
+                this.sessions.Add(destinationID, session);
+                Log.Write(this.ToString(), "Storing session <" + destinationID + ">");
+            }
+            catch (Exception exc)
+            {
+                Log.Write(this.ToString(), "Storing session",exc);
+            }
         }
 
         
@@ -294,8 +301,15 @@ namespace udtCSharp.UDT
                                         Log.Write(this.ToString(), "Request taken for processing.");
                                     }
                                 }
-                                peer.setSocketID(((ConnectionHandshake)packet).getSocketID());
-                                session.received(packet,peer);
+                                try
+                                {
+                                    peer.setSocketID(((ConnectionHandshake)packet).getSocketID());
+                                    session.received(packet, peer);
+                                }
+                                catch (Exception ex)
+                                {
+                                    Log.Write(this.ToString(), "WARNING", ex);
+                                }
                             }
                         }
                         else
@@ -310,10 +324,11 @@ namespace udtCSharp.UDT
                             else
                             {
                                 sessions.TryGetValue(dest, out session);
-                                lastSession=session;
-                                lastDestID=dest;
+                                lastSession = session;
+                                lastDestID = dest;
                             }
-                            if(session==null){
+                            if(session==null)
+                            {
                                 n++;
                                 if(n%100==1){
                                     Log.Write(this.ToString(),"Unknown session <"+dest+"> requested from <"+peer+"> packet type "+packet.ToString());
@@ -344,8 +359,10 @@ namespace udtCSharp.UDT
                 IPEndPoint dgp = packet.getSession().getDatagram();
                 this.dgSocket.SendTo(data, dgp);
             }
-            catch
-            { }
+            catch(Exception exc)
+            {
+                Log.Write(this.ToString(), "send data err", exc);
+            }
         }
 
         public String toString()

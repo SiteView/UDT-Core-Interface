@@ -63,7 +63,7 @@ namespace udtCSharp.Common
                 }
                 
 			    UDTServerSocket server=new UDTServerSocket(myHost,serverPort);
-                ThreadPool.SetMaxThreads(3, 3);
+                ThreadPool.SetMaxThreads(1, 1);
                 
                 while(true)
                 {
@@ -89,15 +89,14 @@ namespace udtCSharp.Common
 				Log.Write("Handling request from "+ti.socket.getSession().getDestination());
 				UDTInputStream inputStream=ti.socket.getInputStream();
 				UDTOutputStream outputStream=ti.socket.getOutputStream();
-				byte[]readBuf=new byte[32768];
-				ByteBuffer bb= new ByteBuffer(readBuf);
+				byte[]readBuf=new byte[32768];				
 
 				//read file name info 
                 while (inputStream.Read(readBuf, 0, readBuf.Length) == 0)
                 {
                     Thread.Sleep(100);
                 }
-
+                ByteBuffer bb = new ByteBuffer(readBuf);
 				//how many bytes to read for the file name
                 //byte[] len = new byte[4];
 				byte[] len = bb.PopByteArray(4);

@@ -72,7 +72,7 @@ namespace udtCSharp.packets
 
         public virtual bool isConnectionHandshake()
         {
-            return true;
+            return false;
         }
 
         public UDTSession getSession()

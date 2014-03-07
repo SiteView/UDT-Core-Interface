@@ -9,7 +9,7 @@ namespace udtCSharp.Common
 {
     public class CountDownLatch
     {
-        private object lockobj;
+        private object lockobj = new object();
         private int counts;
 
         public CountDownLatch(int counts)
