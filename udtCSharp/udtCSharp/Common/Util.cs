@@ -172,23 +172,10 @@ namespace udtCSharp.Common
                 source.Close();
                 Log.Write("copySend-SendFile", exc);
             }
-        }
-	
-	    /**
-	    * perform UDP hole punching to the specified client by sending 
-	    * a dummy packet. A local port will be chosen automatically.
-	    * 
-	    * @param client - client address
-	    * @return the local port that can now be accessed by the client
-	    * @throws IOException
-	    */
-        public static void doHolePunch(UDPEndPoint endpoint, IPAddress client, int clientPort)
-        {
-            byte[] p = new byte[1];
-		    endpoint.sendRaw(p);
-	    }
+        }	
+	   
         /// <summary>
-        /// MD5数据加密
+        /// MD5数据
         /// </summary>
         /// <param name="digest"></param>
         /// <returns></returns>

@@ -11,11 +11,11 @@ using udtCSharp.packets;
 
 namespace udtCSharp.UDT
 {
-    public class UDPEndPoint
+    public class UDPEndPoint : IDisposable
     {
 	    private  int port;
 
-	    private Socket dgSocket;
+        private UdpClient _udpClient;
 
 	    /// <summary>
 	    /// active sessions keyed by socket ID 
@@ -40,108 +40,50 @@ namespace udtCSharp.UDT
 	    /// </summary>
         private volatile bool stopped = false;
         /// <summary>
+        /// has the endpoint been started?
+        /// </summary>
+        private volatile bool _started = false;
+        /// <summary>
         /// 数据长度
         /// </summary>
 	    public const int DATAGRAM_SIZE=1400;
-
         /// <summary>
-        /// 当前socket 的连接地址
+        /// 运程主机的地址
         /// </summary>
-        public IPEndPoint _ipep = new IPEndPoint(IPAddress.Any, 0);
-        ///// <summary>
-        ///// 运程主机的地址
-        ///// </summary>
-        //private EndPoint Remote = null;
-         
+        public IPEndPoint remoteIP = new IPEndPoint(IPAddress.Any, 0);
         /// <summary>
         /// 在给定的套接字上创建UDPEndPoint
         /// </summary>
         /// <param name="_socket">a UDP socket</param>
-        public UDPEndPoint(Socket _socket)
+        public UDPEndPoint(UdpClient _udpsocket)
         {
-            this.dgSocket = _socket;            
-            port = ((IPEndPoint)dgSocket.LocalEndPoint).Port;
+            this._udpClient = _udpsocket;
 
-            _ipep = new IPEndPoint(((IPEndPoint)dgSocket.LocalEndPoint).Address, port);
-            this.dgSocket.Bind(_ipep);
+            this.port = ((IPEndPoint)this._udpClient.Client.LocalEndPoint).Port;
         }
-
-         /**
-	     * bind to any local port on the given host address
-	     * @param localAddress
-	     * @throws SocketException
-	     * @throws UnknownHostException
-	     */
-	    public UDPEndPoint(IPAddress localAddress):this(localAddress,0)
-        {
-		    ;
-	    }
       
         /// <summary>
         /// 绑定到给定的地址和端口上创建UDPEndPoint
         /// </summary>
         /// <param name="localAddress">IP地址</param>
         /// <param name="localPort">瑞口</param>
-        public UDPEndPoint(IPAddress localAddress, int localPort)
+        public UDPEndPoint(int localPort)
         {
             try
             {
-                if (localAddress == null)
-                {
-                    _ipep = new IPEndPoint(IPAddress.Any, localPort);
-                    dgSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-                }
-                else
-                {
-                    _ipep = new IPEndPoint(localAddress, localPort);
-                    dgSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-                }
-                if (localPort > 0)
-                {
-                    this.port = localPort;
-                }
-                else
-                {
-                    port = ((IPEndPoint)dgSocket.LocalEndPoint).Port;
-                }
-
-                //set a time out to avoid blocking in doReceive()
-                dgSocket.ReceiveTimeout = 100000;
-                //buffer size
-                dgSocket.ReceiveBufferSize = 128 * 1024;
-
-                dgSocket.Bind(_ipep);
+                this.port = localPort;
+                _udpClient = new UdpClient(this.port);
+                uint IOC_IN = 0x80000000;
+                uint IOC_VENDOR = 0x18000000;
+                uint SIO_UDP_CONNRESET = IOC_IN | IOC_VENDOR | 12;
+                _udpClient.Client.IOControl(
+                    (int)SIO_UDP_CONNRESET,
+                    new byte[] { Convert.ToByte(false) },
+                    null);
             }
             catch (Exception exc)
             {
-                Log.Write(this.GetType().ToString(), exc);
-            }
-        }
-       
-        /// <summary>
-        ///启动 endpoint. 如果serverSocketModeEnabled标志<code>真</ code>，
-        ///一个新的连接可以传递给应用程序。该应用程序需要调用＃accept（）方法来获取socket
-        /// </summary>
-        /// <param name="serverSocketModeEnabled"></param>
-        public void start(bool serverSocketModeEnabled)
-        {
-            this.serverSocketMode = serverSocketModeEnabled;
-
-            Thread t = new Thread(new ThreadStart(receive));
-            t.IsBackground = true;
-            t.Start();
-            Log.Write(this.ToString(), "UDTEndpoint started.");
-        }
-
-        private void receive()
-        {
-            try
-            {
-                doReceive();
-            }
-            catch (Exception ex)
-            {
-                Log.Write(this.ToString(), "WARNING", ex);
+                Log.Write(this.ToString(),"Create a UdpClient connection failure", exc);
             }
         }
 
@@ -149,40 +91,180 @@ namespace udtCSharp.UDT
         /// 启动 endpoint.
         /// </summary>
         public void start()
-        {
-            start(false);
+        {            
+            if (!_started)
+            {
+                _started = true;
+                start(_started);
+            }
         }
+
+        /// <summary>
+        ///启动 endpoint 监听. 如果是服务端的监听 传入值为 true 否则是 false
+        /// </summary>
+        /// <param name="serverSocketModeEnabled"></param>
+        public void start(bool serverSocketModeEnabled)
+        {
+            _started = true;
+            this.serverSocketMode = serverSocketModeEnabled;
+            ReceiveInternal();          
+            Log.Write(this.ToString(), "UDTEndpoint started.");
+        }
+
+        protected void ReceiveInternal()
+        {
+            if (!_started)
+            {
+                return;
+            }
+            try
+            {
+                this._udpClient.BeginReceive(new AsyncCallback(ReceiveCallback),null);
+            }
+            catch (SocketException ex)
+            {
+                Log.Write(this.ToString(), "ReceiveInternal data", ex);
+            }
+        }
+      
+        /// <summary>
+        /// single receive, run in the receiverThread, see {@link #start()}
+        /// Receives UDP packets from the network
+        /// Converts them to UDT packets
+        /// dispatches the UDT packets according to their destination ID.
+        /// </summary>
+        /// <param name="result"></param>
+        private void ReceiveCallback(IAsyncResult result)
+        {
+            if (!_started)
+            {
+                return;
+            }
+            //IPEndPoint remoteIP = new IPEndPoint(IPAddress.Any, 0);
+            //byte[] dp = new byte[DATAGRAM_SIZE];//数据
+            byte[] buffer = null;
+            try
+            {
+                buffer = this._udpClient.EndReceive(result, ref remoteIP);
+            }
+            catch (SocketException ex)
+            {
+                Log.Write(this.ToString(), "ReceiveCallback data", ex);
+            }
+            finally
+            {
+                ReceiveInternal();
+            }
+
+            this.ReceiveData(buffer, remoteIP);
+        }
+       
+        private long lastDestID = -1;
+        private UDTSession lastSession;
+        private int n = 0;
+
+        private object thisLock = new object();
+       /// <summary>
+       /// 处理接收的数据
+       /// </summary>
+       /// <param name="dp"></param>
+       /// <param name="_remoteIP"></param>
+        private void ReceiveData(byte[] dp, IPEndPoint _remoteIP)
+        {
+            try
+            {
+                Destination peer = new Destination(_remoteIP.Address, _remoteIP.Port);
+
+                int l = dp.Length;
+                UDTPacket packet = PacketFactory.createPacket(dp, l);
+                lastPacket = packet;
+
+                //handle connection handshake  处理连接握手
+                if (packet.isConnectionHandshake())
+                {
+                    lock (thisLock)
+                    {
+                        long id = packet.getDestinationID();
+                        UDTSession session;
+                        sessions.TryGetValue(id, out session);
+                        if (session == null)
+                        {
+                            session = new ServerSession(dp, this);
+                            addSession(session.getSocketID(), session);
+                            //TODO need to check peer to avoid duplicate server session
+                            if (serverSocketMode)
+                            {
+                                sessionHandoff.Enqueue(session);
+                                Log.Write(this.ToString(), "Pooling new request, request taken for processing.");
+                            }
+                        }
+                        try
+                        {
+                            peer.setSocketID(((ConnectionHandshake)packet).getSocketID());
+                            session.received(packet, peer);
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Write(this.ToString(), "WARNING", ex);
+                        }
+                    }
+                }
+                else
+                {
+                    //dispatch to existing session
+                    long dest = packet.getDestinationID();
+                    UDTSession session;
+                    if (dest == lastDestID)
+                    {
+                        session = lastSession;
+                    }
+                    else
+                    {
+                        sessions.TryGetValue(dest, out session);
+                        lastSession = session;
+                        lastDestID = dest;
+                    }
+                    if (session == null)
+                    {
+                        n++;
+                        if (n % 100 == 1)
+                        {
+                            Log.Write(this.ToString(), "Unknown session <" + dest + "> requested from <" + peer + "> packet type " + packet.ToString());
+                        }
+                    }
+                    else
+                    {
+                        session.received(packet, peer);
+                    }
+                }
+            }
+            catch (SocketException ex)
+            {
+                Log.Write(this.ToString(), "INFO", ex);
+            }
+        }       
 
         /// <summary>
         /// 暂停 endpoint.
         /// </summary>
         public void stop()
         {
-            stopped = true;
-            dgSocket.Close();
+            this.stopped = true;
+            this.Dispose();
         }
        
         /// <summary>
-        /// 返回socket的连接端口
+        /// 返回UdpClient的连接端口
         /// </summary>
         /// <returns></returns>
         public int getLocalPort() 
         {
-            return ((IPEndPoint)this.dgSocket.LocalEndPoint).Port;
-        }
-       
-        /// <summary>
-        /// 返回socket的连接地址
-        /// </summary>
-        /// <returns></returns>
-        public IPAddress getLocalAddress()
-        {
-            return ((IPEndPoint)this.dgSocket.LocalEndPoint).Address;
+            return this.port;
         }
 
-        private Socket getSocket()
+        private UdpClient getSocket()
         {
-            return dgSocket;
+            return this._udpClient;
         }
 
         private UDTPacket getLastPacket()
@@ -237,143 +319,87 @@ namespace udtCSharp.UDT
         {
             try
             {
-                return this.sessionHandoff.Dequeue();
+                if (this.sessionHandoff.Count > 0)
+                {
+                    return this.sessionHandoff.Dequeue();
+                }
+                else
+                {
+                    return null;
+                }
             }
             catch
             {
                 return null;
             }
         }
-
-        byte[] dp = new byte[DATAGRAM_SIZE];//数据
-
-        ///**
-        // * single receive, run in the receiverThread, see {@link #start()}
-        // * <ul>
-        // * <li>Receives UDP packets from the network</li> 
-        // * <li>Converts them to UDT packets</li>
-        // * <li>dispatches the UDT packets according to their destination ID.</li>
-        // * </ul> 
-        // * @throws IOException
-        // */
-        private long lastDestID=-1;
-        private UDTSession lastSession;       
-	
-        private int n=0;
-
-        private object thisLock = new object();
-	    public IPEndPoint Remoteinfo = new IPEndPoint(IPAddress.Any, 0);
-        protected void doReceive()
-        {
-            while(!stopped){
-                try{
-                    try{
-                        //will block until a packet is received or timeout has expired
-                        IPEndPoint sender = new IPEndPoint(IPAddress.Any, 0);
-                        EndPoint Remote = (EndPoint)sender;
-                        //dgSocket.Bind(_ipep);
-                        dgSocket.ReceiveFrom(dp,ref Remote);
-
-                        Remoteinfo = (IPEndPoint)Remote;
-                        Destination peer = new Destination(Remoteinfo.Address, Remoteinfo.Port);
-
-                        int l=dp.Length;
-                        UDTPacket packet=PacketFactory.createPacket(dp,l);
-                        lastPacket=packet;
-
-                        //handle connection handshake 
-                        if(packet.isConnectionHandshake())
-                        {
-                            lock (thisLock)
-                            {
-                                long id=packet.getDestinationID();
-                                UDTSession session;
-                                sessions.TryGetValue(id, out session);
-                                if(session==null)
-                                {
-                                    session = new ServerSession(dp, this);
-                                    addSession(session.getSocketID(), session);
-                                    //TODO need to check peer to avoid duplicate server session
-                                    if (serverSocketMode)
-                                    {
-                                        Log.Write(this.ToString(), "Pooling new request.");
-                                        sessionHandoff.Enqueue(session);
-                                        Log.Write(this.ToString(), "Request taken for processing.");
-                                    }
-                                }
-                                try
-                                {
-                                    peer.setSocketID(((ConnectionHandshake)packet).getSocketID());
-                                    session.received(packet, peer);
-                                }
-                                catch (Exception ex)
-                                {
-                                    Log.Write(this.ToString(), "WARNING", ex);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            //dispatch to existing session
-                            long dest=packet.getDestinationID();
-                            UDTSession session;
-                            if(dest==lastDestID)
-                            {
-                                session=lastSession;
-                            }
-                            else
-                            {
-                                sessions.TryGetValue(dest, out session);
-                                lastSession = session;
-                                lastDestID = dest;
-                            }
-                            if(session==null)
-                            {
-                                n++;
-                                if(n%100==1){
-                                    Log.Write(this.ToString(),"Unknown session <"+dest+"> requested from <"+peer+"> packet type "+packet.ToString());
-                                }
-                            }
-                            else
-                            {
-                                session.received(packet,peer);
-                            }
-                        }
-                    }
-                    catch(SocketException ex)
-                    {
-                        Log.Write(this.ToString(), "INFO", ex);
-                    }
-
-                }catch(Exception ex){
-                    Log.Write(this.ToString(), "WARNING", ex);
-                }
-            }
-        }
-
+        /// <summary>
+        /// 发送udp数据包
+        /// </summary>
+        /// <param name="packet"></param>
         public void doSend(UDTPacket packet)
         {
             try
             {
                 byte[] data = packet.getEncoded();
                 IPEndPoint dgp = packet.getSession().getDatagram();
-                this.dgSocket.SendTo(data, dgp);
+                this.SendInternal(data, dgp);
             }
-            catch(Exception exc)
+            catch (Exception exc)
             {
                 Log.Write(this.ToString(), "send data err", exc);
             }
         }
 
-        public String toString()
+        protected void SendInternal(byte[] buffer, IPEndPoint remoteIP)
         {
-            return "UDPEndpoint port=" + port.ToString();
+            if (!_started)
+            {
+                Log.Write(this.ToString(), "UDP Closed.");
+            }
+            try
+            {
+                this._udpClient.BeginSend(
+                   buffer,
+                   buffer.Length,
+                   remoteIP,
+                   new AsyncCallback(SendCallback),
+                   null);
+            }
+            catch (SocketException ex)
+            {
+                Log.Write(this.ToString(), " SendInternal UDP send data", ex);
+            }
         }
 
-        public void sendRaw(byte[] p)
+        private void SendCallback(IAsyncResult result)
         {
-            this.dgSocket.Send(p);
+            try
+            {
+                this._udpClient.EndSend(result);
+            }
+            catch (SocketException ex)
+            {
+                Log.Write(this.ToString(), "SendCallback UDP send data", ex);
+            }
+        }       
+
+        public String toString()
+        {
+            return "UDPEndpoint port=" + this.port.ToString();
         }
-       
+
+        #region IDisposable 成员
+
+        public void Dispose()
+        {
+            _started = false;
+            if (_udpClient != null)
+            {
+                _udpClient.Close();
+                _udpClient = null;
+            }
+        }
+        #endregion
     }
 }

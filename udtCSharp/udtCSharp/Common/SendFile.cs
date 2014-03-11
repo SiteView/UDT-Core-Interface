@@ -60,9 +60,9 @@ namespace udtCSharp.Common
                             break;
                         }
                     }
-                }
+                }                
                 
-			    UDTServerSocket server=new UDTServerSocket(myHost,serverPort);
+                UDTServerSocket server = new UDTServerSocket(serverPort);
                 ThreadPool.SetMaxThreads(1, 1);
                 
                 while(true)

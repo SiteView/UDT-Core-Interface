@@ -14,10 +14,11 @@ namespace udtCSharp.UDT
 	    //last received packet (for testing purposes)
 	    new private UDTPacket lastPacket;
 
-	    public ServerSession(byte[] dp, UDPEndPoint endPoint):base("ServerSession localPort="+endPoint.getLocalPort()+" peer="+endPoint.Remoteinfo.Address+":"+endPoint.Remoteinfo.Port,new Destination(endPoint.Remoteinfo.Address,endPoint.Remoteinfo.Port))
+        public ServerSession(byte[] dp, UDPEndPoint endPoint)
+            : base("ServerSession localPort=" + endPoint.getLocalPort() + " peer=" + endPoint.remoteIP.Address + ":" + endPoint.remoteIP.Port, new Destination(endPoint.remoteIP.Address, endPoint.remoteIP.Port))
         {
 		    this.endPoint=endPoint;
-		    Log.Write(this.ToString(),"Created "+toString()+" talking to "+endPoint.Remoteinfo.Address+":"+endPoint.Remoteinfo.Port);
+            Log.Write(this.ToString(), "Created " + toString() + " talking to " + endPoint.remoteIP.Address + ":" + endPoint.remoteIP.Port);
 	    }      
 
 	    int n_handshake=0;

@@ -15,26 +15,12 @@ namespace udtCSharp.UDT
 	    private UDPEndPoint clientEndpoint;
 	    private ClientSession clientSession;
 
-	    public UDTClient(IPAddress address, int localport)
+        public UDTClient(int _port)
         {
-            try
-            {
-		        //create endpoint
-		        clientEndpoint=new UDPEndPoint(address,localport);//127.0.0.1 55321
-		        Log.Write(this.ToString(),"Created client endpoint on port "+localport);
-            }
-            catch(Exception exc)
-            {
-                Log.Write(this.ToString(),exc);
-            }
-	    }
-
-        public UDTClient(IPAddress address)
-        {
-		    //create endpoint
-		    clientEndpoint = new UDPEndPoint(address);
-            Log.Write(this.ToString(),"Created client endpoint on port " + clientEndpoint.getLocalPort());
-	    }
+            //create endpoint
+            clientEndpoint = new UDPEndPoint(_port);
+            Log.Write(this.ToString(), "Created client endpoint on port " + clientEndpoint.getLocalPort());
+        }       
 
 	    public UDTClient(UDPEndPoint endpoint)
         {
@@ -58,7 +44,9 @@ namespace udtCSharp.UDT
 		        clientSession=new ClientSession(clientEndpoint,destination);
 		        clientEndpoint.addSession(clientSession.getSocketID(), clientSession);
 
-		        clientEndpoint.start();
+		        //clientEndpoint.start();
+                clientEndpoint.start(false);//启动监听
+
 		        clientSession.connect();
 		        //wait for handshake
 		        while(!clientSession.isReady())

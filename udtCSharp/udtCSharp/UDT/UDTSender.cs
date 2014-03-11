@@ -365,6 +365,10 @@ namespace udtCSharp.UDT
         {
 		    while(!paused)
             {
+                if (sendQueue.Count <= 0)
+                {
+                    continue;
+                }
 			    iterationStart=Util.getCurrentTime();
 			
 			    //if the sender's loss list is not empty 

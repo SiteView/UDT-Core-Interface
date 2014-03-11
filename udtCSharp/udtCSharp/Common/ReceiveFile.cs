@@ -71,7 +71,7 @@ namespace udtCSharp.Common
                         }
                     }
                 }
-			    UDTClient client = new UDTClient(myHost,localPort);
+			    UDTClient client = new UDTClient(localPort);
 			    client.connect(serverHost, serverPort);
 			    UDTInputStream inputStream = client.getInputStream();
 			    UDTOutputStream outputStream = client.getOutputStream();
