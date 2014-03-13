@@ -45,6 +45,7 @@
     <Compile Include="Common\ByteBuffer.cs" />
     <Compile Include="Common\CircularArray.cs" />
     <Compile Include="Common\CountDownLatch.cs" />
+    <Compile Include="Common\MD5Helper.cs" />
     <Compile Include="Common\MeanThroughput.cs" />
     <Compile Include="Common\MeanValue.cs" />
     <Compile Include="Common\ReceiveBuffer.cs" />

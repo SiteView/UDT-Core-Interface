@@ -76,17 +76,17 @@ namespace udtCSharpTest
 
         private void main_Test()
         {
-		    this.runServer();
-		    do
-            {
-			    Thread.Sleep(500);
-		    }while(!serverStarted);		
-		   
+            //this.runServer();
+            //do
+            //{
+            //    Thread.Sleep(500);
+            //}while(!serverStarted);		
+
             string pathSource = @"D:\XamlTest\MindSamples.rar";
             string pathNew = @"D:\XamlTest\MindSamplesBack.rar";
             //65321 是服务端的端口
             String[] args1 = new String[] { "127.0.0.1", "65321", pathSource, pathNew };
-		    ReceiveFile.Main_Receive(args1);
+            ReceiveFile.Main_Receive(args1);
 	    }
 
 

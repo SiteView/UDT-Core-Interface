@@ -36,10 +36,17 @@ namespace udtCSharp.UDT
         {
             try
             {
-		        int n=0;
-		        while(getState()!=ready)
+		        int n=0;               
+                while(getState()!=ready)
                 {
-			        sendHandShake();
+			        sendHandShake();//不断发送握手信息
+                    while (getState() != ready)//暂时加的，方便调试
+                    {
+                        if (getState() == ready)
+                        {
+                            break;
+                        }
+                    }
 			        if(getState()==invalid)
                     {
                          Log.Write(this.ToString(),"Can't connect!");
@@ -88,13 +95,15 @@ namespace udtCSharp.UDT
 					    }
 					    return;
 				    }
-				    else{
-					    try{
+				    else
+                    {
+					    try
+                        {
 						    //TODO validate parameters sent by peer
 						    long peerSocketID=hs.getSocketID();
-						    destination.setSocketID(peerSocketID);
-						    setState(ready);
-						    socket=new UDTSocket(endPoint,this);		
+						    destination.setSocketID(peerSocketID);						    
+						    socket=new UDTSocket(endPoint,this);
+                            setState(ready);
 					    }catch(Exception ex){
 						     Log.Write(this.ToString(),"WARNING:Error creating socket",ex);
 						    setState(invalid);
@@ -114,10 +123,13 @@ namespace udtCSharp.UDT
 			    }
 			    active = true;
 			    try{
-				    if(packet.forSender()){
+				    if(packet.forSender())
+                    {
 					    socket.getSender().receive(lastPacket);
-				    }else{
-					    socket.getReceiver().receive(lastPacket);	
+				    }
+                    else
+                    {
+                        socket.getReceiver().receive(lastPacket);//将数据包存在UDTReceiver类的队列中
 				    }
 			    }catch(Exception ex){
 				    //session is invalid

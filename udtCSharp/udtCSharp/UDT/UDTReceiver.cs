@@ -230,51 +230,66 @@ namespace udtCSharp.UDT
         {
             try
             {
-		        //check ACK timer
-		        long currentTime=Util.getCurrentTime();
-		        if(nextACK<currentTime){
-			        nextACK=currentTime+ackTimerInterval;
-			        processACKEvent(true);
-		        }
-		        //check NAK timer
-		        if(nextNAK<currentTime){
-			        nextNAK=currentTime+nakTimerInterval;
-			        processNAKEvent();
-		        }
-
-		        //check EXP timer
-		        if(nextEXP<currentTime){
-			        nextEXP=currentTime+expTimerInterval;
-			        processEXPEvent();
-		        }
-		        //perform time-bounded UDP receive
-		        UDTPacket packet=handoffQueue.Dequeue();
-		        if(packet!=null)
+                if (handoffQueue.Count <= 0)
                 {
-			        //reset exp count to 1
-			        expCount=1;
-			        //If there is no unacknowledged data packet, or if this is an 
-			        //ACK or NAK control packet, reset the EXP timer.
-			        bool needEXPReset=false;
-			        if(packet.isControlPacket()){
-				        ControlPacket cp=(ControlPacket)packet;
-				        int cpType=cp.getControlPacketType();
-				        if(cpType==(int)ControlPacketType.ACK || cpType==(int)ControlPacketType.NAK)
+                    Thread.Yield();
+                }
+                else
+                {
+                    //check ACK timer
+                    long currentTime = Util.getCurrentTime();
+
+                    #region 暂时,屏蔽不然会一直发包(不知道这段是启什么作用)
+                    //if (nextACK < currentTime)
+                    //{
+                    //    nextACK = currentTime + ackTimerInterval;
+                    //    processACKEvent(true);
+                    //}
+                    ////check NAK timer
+                    //if (nextNAK < currentTime)
+                    //{
+                    //    nextNAK = currentTime + nakTimerInterval;
+                    //    processNAKEvent();
+                    //}
+
+                    ////check EXP timer
+                    //if (nextEXP < currentTime)
+                    //{
+                    //    nextEXP = currentTime + expTimerInterval;
+                    //    processEXPEvent();
+                    //}
+                    #endregion
+
+                    //perform time-bounded UDP receive
+                    UDTPacket packet = handoffQueue.Dequeue();                    
+                    if (packet != null)
+                    {
+                        //reset exp count to 1
+                        expCount = 1;
+                        //If there is no unacknowledged data packet, or if this is an 
+                        //ACK or NAK control packet, reset the EXP timer.
+                        bool needEXPReset = false;
+                        if (packet.isControlPacket())
                         {
-					        needEXPReset=true;
-				        }
-			        }
-			        if(needEXPReset){
-				        nextEXP=Util.getCurrentTime()+expTimerInterval;
-			        }
-			        if(storeStatistics)processTime.begin();
-			
-			        processUDTPacket(packet);
-			
-			        if(storeStatistics)processTime.end();
-		        }
-		
-		        Thread.Yield();
+                            ControlPacket cp = (ControlPacket)packet;
+                            int cpType = cp.getControlPacketType();
+                            if (cpType == (int)ControlPacketType.ACK || cpType == (int)ControlPacketType.NAK)
+                            {
+                                needEXPReset = true;
+                            }
+                        }
+                        if (needEXPReset)
+                        {
+                            nextEXP = Util.getCurrentTime() + expTimerInterval;
+                        }
+                        if (storeStatistics) processTime.begin();
+                        //解析数据包将数据存在AppData类中
+                        processUDTPacket(packet);
+
+                        if (storeStatistics) processTime.end();
+                    }
+                    Thread.Yield();
+                }
             }
             catch(Exception exc)
             {
@@ -388,14 +403,17 @@ namespace udtCSharp.UDT
 		    //(3).Check the packet type and process it according to this.
 		    try
             {
-		        if(!p.isControlPacket()){
+		        if(!p.isControlPacket())
+                {
 			        DataPacket dp=(DataPacket)p;
-			        if(storeStatistics){
+			        if(storeStatistics)
+                    {
 				        dataPacketInterval.end();
 				        dataProcessTime.begin();
 			        }
-			        onDataPacketReceived(dp);
-			        if(storeStatistics){
+                    onDataPacketReceived(dp);//解析数据包将数据存在AppData类中
+			        if(storeStatistics)
+                    {
 				        dataProcessTime.end();
 				        dataPacketInterval.begin();
 			        }
@@ -441,7 +459,7 @@ namespace udtCSharp.UDT
         //				return;
         //			}
         //		//}
-		        bool OK=session.getSocket().getInputStream().haveNewData(currentSequenceNumber,dp.getData());
+                bool OK = session.getSocket().getInputStream().haveNewData(currentSequenceNumber, dp.getData());//解析数据包将数据存在AppData类中
 		        if(!OK)
                 {
 			        //need to drop packet...

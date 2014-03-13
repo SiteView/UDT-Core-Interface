@@ -186,7 +186,7 @@ namespace udtCSharp.UDT
                     {
                         long id = packet.getDestinationID();
                         UDTSession session;
-                        sessions.TryGetValue(id, out session);
+                        sessions.TryGetValue(id, out session);//ClientSession 或是 ServerSession
                         if (session == null)
                         {
                             session = new ServerSession(dp, this);
@@ -201,7 +201,7 @@ namespace udtCSharp.UDT
                         try
                         {
                             peer.setSocketID(((ConnectionHandshake)packet).getSocketID());
-                            session.received(packet, peer);
+                            session.received(packet, peer);//ClientSession 或是 ServerSession
                         }
                         catch (Exception ex)
                         {

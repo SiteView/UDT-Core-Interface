@@ -32,18 +32,21 @@ namespace udtCSharp.UDT
 			    ConnectionHandshake connectionHandshake=(ConnectionHandshake)packet;
 			    Log.Write(this.ToString(),"Received "+connectionHandshake);
 
-			    if (getState()<=ready){
+			    if (getState()<=ready)
+                {
 				    destination.setSocketID(connectionHandshake.getSocketID());
 
-				    if(getState()<=handshaking){
+				    if(getState()<=handshaking)
+                    {
 					    setState(handshaking);
 				    }
-				    try{
+				    try
+                    {
 					    handleHandShake(connectionHandshake);
 					    n_handshake++;
-					    try{
-						    setState(ready);
+					    try{						    
 						    socket=new UDTSocket(endPoint, this);
+                            setState(ready);
 						    cc.init();
 					    }catch(Exception uhe){
 						    //session is invalid
@@ -65,7 +68,8 @@ namespace udtCSharp.UDT
 			    return;
 		    }
 
-		    if(getState()== ready) {
+		    if(getState()== ready) 
+            {
 			    active = true;
 
 			    if (packet is KeepAlive)

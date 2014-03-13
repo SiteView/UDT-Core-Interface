@@ -127,7 +127,9 @@ namespace udtCSharp.Common
             {
 			    return null;
 		    }
-		    AppData r=buffer[readPosition];
+            ////暂时加的
+            //readPosition--;            
+		    AppData r = buffer[readPosition];
 		    if(r!=null)
             {
 			    long thisSeq=r.getSequenceNumber();
@@ -148,7 +150,7 @@ namespace udtCSharp.Common
 
 	    void increment()
         {
-		    buffer[readPosition]=null;
+		    buffer[readPosition] = null;
 		    readPosition++;
 		    if(readPosition==size)readPosition=0;
             numValidChunks.DecrementAndGet();

@@ -20,7 +20,7 @@ namespace udtCSharp.UDT
             //create endpoint
             clientEndpoint = new UDPEndPoint(_port);
             Log.Write(this.ToString(), "Created client endpoint on port " + clientEndpoint.getLocalPort());
-        }       
+        }
 
 	    public UDTClient(UDPEndPoint endpoint)
         {

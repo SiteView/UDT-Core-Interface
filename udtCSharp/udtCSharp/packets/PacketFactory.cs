@@ -25,7 +25,9 @@ namespace udtCSharp.packets
         public static UDTPacket createPacket(byte[] encodedData, int length)
         {
             bool isControl = (encodedData[0] & 128) != 0;
-            if (isControl) return createControlPacket(encodedData, length);
+            if (isControl) 
+                return createControlPacket(encodedData, length);
+
             return new DataPacket(encodedData, length);
         }
 

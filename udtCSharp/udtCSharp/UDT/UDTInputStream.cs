@@ -142,7 +142,7 @@ namespace udtCSharp.UDT
         }
 
         /// <summary>
-        /// new application data
+        /// 将一个新数据存在AppData类中
         /// </summary>
         /// <param name="sequenceNumber"></param>
         /// <param name="data"></param>

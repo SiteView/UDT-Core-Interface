@@ -194,7 +194,7 @@ namespace udtCSharp.UDT
         /// <param name="timeout"></param>
         public void doWrite(byte[]data, int offset, int length, int timeout)
         {
-		    int chunksize=session.getDatagramSize() - 24;//need some bytes for the header
+            int chunksize = session.getDatagramSize() - 24;//need some bytes for the header  1400-24=1376 每一次发送的最大字节数
             ByteBuffer bb = new ByteBuffer(data, offset, length);
 		    long seqNo=0;
 		    while(bb.Remaining()>0)

@@ -19,13 +19,29 @@ namespace udtCSharp.UDT
 	    private volatile int state=start;
 	    protected volatile UDTPacket lastPacket;
 	
-	    //state constants	
+	    /// <summary>
+        /// 状态常量
+	    /// </summary>
 	    public const int start=0;
+        /// <summary>
+        /// 握手信息
+        /// </summary>
         public const int handshaking = 1;
+        /// <summary>
+        /// 准备信息
+        /// </summary>
         public const int ready = 2;
+        /// <summary>
+        /// 保持活着信息
+        /// </summary>
         public const int keepalive = 3;
+        /// <summary>
+        /// 关闭信息
+        /// </summary>
         public const int shutdown = 4;
-
+        /// <summary>
+        /// 未知信息
+        /// </summary>
         public const int invalid = 99;
 
 	    protected volatile UDTSocket socket;

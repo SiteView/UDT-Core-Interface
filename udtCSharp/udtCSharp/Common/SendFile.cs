@@ -43,31 +43,31 @@ namespace udtCSharp.Common
 		    try
             {
 			    UDTReceiver.connectionExpiryDisabled=true;
-                IPAddress myHost = null;
-                if (localIP != "")
-                {
-                    myHost = IPAddress.Parse(localIP);
-                }
-                else
-                {
-                    string hostname = Dns.GetHostName();
-                    IPHostEntry hostip = Dns.GetHostEntry(hostname);
-                    foreach (IPAddress ipaddress in hostip.AddressList)
-                    {
-                        if (ipaddress.ToString().IndexOf(':') < 0)//存在IPV6的地址，所以要判断
-                        {
-                            myHost = ipaddress;
-                            break;
-                        }
-                    }
-                }                
+                //IPAddress myHost = null;
+                //if (localIP != "")
+                //{
+                //    myHost = IPAddress.Parse(localIP);
+                //}
+                //else
+                //{
+                //    string hostname = Dns.GetHostName();
+                //    IPHostEntry hostip = Dns.GetHostEntry(hostname);
+                //    foreach (IPAddress ipaddress in hostip.AddressList)
+                //    {
+                //        if (ipaddress.ToString().IndexOf(':') < 0)//存在IPV6的地址，所以要判断
+                //        {
+                //            myHost = ipaddress;
+                //            break;
+                //        }
+                //    }
+                //}
                 
                 UDTServerSocket server = new UDTServerSocket(serverPort);
                 ThreadPool.SetMaxThreads(1, 1);
                 
                 while(true)
                 {
-				    UDTSocket socket = server.Accept();//
+                    UDTSocket socket = server.Accept();//启动监听(第一次),及获取已经存在的连接信息
 				    Thread.Sleep(1000);
                     TaskInfo ti = new TaskInfo(socket, verbose);
                     

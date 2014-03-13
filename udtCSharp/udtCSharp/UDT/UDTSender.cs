@@ -204,9 +204,10 @@ namespace udtCSharp.UDT
         {
             try
             {
-		        if(!started)start();
-                //return sendQueue.offer(p, timeout, units); java
                 sendQueue.Enqueue(p);
+
+                if (!started) start();
+
                 return true;
             }
             catch(Exception ex)

@@ -53,27 +53,27 @@ namespace udtCSharp.Common
 		    try
             {
 			    UDTReceiver.connectionExpiryDisabled=true;
-                IPAddress myHost = null;
-                if (localIP != "")
-                {
-                    myHost = IPAddress.Parse(localIP);
-                }
-                else
-                {
-                    string hostname = Dns.GetHostName();
-                    IPHostEntry hostip = Dns.GetHostEntry(hostname);
-                    foreach (IPAddress ipaddress in hostip.AddressList)
-                    {
-                        if (ipaddress.ToString().IndexOf(':') < 0)//存在IPV6的地址，所以要判断
-                        {
-                            myHost = ipaddress;
-                            break;
-                        }
-                    }
-                }
+                //IPAddress myHost = null;
+                //if (localIP != "")
+                //{
+                //    myHost = IPAddress.Parse(localIP);
+                //}
+                //else
+                //{
+                //    string hostname = Dns.GetHostName();
+                //    IPHostEntry hostip = Dns.GetHostEntry(hostname);
+                //    foreach (IPAddress ipaddress in hostip.AddressList)
+                //    {
+                //        if (ipaddress.ToString().IndexOf(':') < 0)//存在IPV6的地址，所以要判断
+                //        {
+                //            myHost = ipaddress;
+                //            break;
+                //        }
+                //    }
+                //}
 			    UDTClient client = new UDTClient(localPort);
 			    client.connect(serverHost, serverPort);
-			    UDTInputStream inputStream = client.getInputStream();
+                UDTInputStream inputStream = client.getInputStream();//报错未将对象引用设置到对象的实例。
 			    UDTOutputStream outputStream = client.getOutputStream();
 			    
                 Log.Write(this.ToString(),"[ReceiveFile] Requesting file "+remoteFile);
@@ -90,7 +90,7 @@ namespace udtCSharp.Common
 			    //pause the sender to save some CPU time
 			    outputStream.pauseOutput();
 			
-			    //read size info (an 64 bit number) 
+			    //存放文件长度信息
 			    byte[]sizeInfo=new byte[8];
 			
 			    int total=0;
@@ -120,7 +120,7 @@ namespace udtCSharp.Common
                     TimeSpan ts_start = new TimeSpan(System.DateTime.UtcNow.Ticks - new DateTime(1970, 1, 1, 0, 0, 0).Ticks);
                     long start = (long)ts_start.TotalMilliseconds;
 
-			        //and read the file data
+			        //接收文件数据
 				    Util.copy(inputStream, os, size, false);
 
                     TimeSpan ts_end = new TimeSpan(System.DateTime.UtcNow.Ticks - new DateTime(1970, 1, 1, 0, 0, 0).Ticks);
