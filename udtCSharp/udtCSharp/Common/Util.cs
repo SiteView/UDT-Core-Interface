@@ -109,12 +109,18 @@ namespace udtCSharp.Common
                 while (true)
                 {
                     c = source.Read(buf, 0, buf.Length);
-                    if (c < 0) break;
-                    read += c;
-                    ///Log.Write("writing <"+c+"> bytes");
-                    target.Write(buf, 0, c);
-                    if (flush) target.Flush();
-                    if (read >= size && size > -1) break;
+                    if (c < 0)
+                    {
+                        break;
+                    }
+                    else if (c > 0)
+                    {
+                        read += c;
+                        ///Log.Write("writing <"+c+"> bytes");
+                        target.Write(buf, 0, c);
+                        if (flush) target.Flush();
+                        if (read >= size && size > -1) break;
+                    }
                 }
                 if (!flush) target.Flush();
             }

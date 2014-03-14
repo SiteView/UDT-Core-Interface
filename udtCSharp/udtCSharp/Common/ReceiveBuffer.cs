@@ -34,6 +34,7 @@ namespace udtCSharp.Common
         /// 多线程操作同步
         /// </summary>
         private static Mutex mutex = new Mutex();
+        private static Mutex mutex2 = new Mutex();
 
 	    //the size of the buffer
 	    private int size;
@@ -56,6 +57,7 @@ namespace udtCSharp.Common
             mutex.WaitOne();
             try
             {
+                
                 long seq = data.getSequenceNumber();
                 //if already have this chunk, discard it
                 if (SequenceNumber.compare(seq, initialSequenceNumber) < 0) return true;
@@ -64,7 +66,10 @@ namespace udtCSharp.Common
                 int insert = offset % size;
                 buffer[insert] = data;
                 numValidChunks.IncrementAndGet();
-
+                if (insert == 498)
+                {
+                    int i = 630208;
+                }
                 return true;
             }
             catch
@@ -95,7 +100,7 @@ namespace udtCSharp.Common
         {
 		    
 		    long nanos = timeout*1000;//毫秒
-            mutex.WaitOne((int)nanos);
+            mutex2.WaitOne((int)nanos);
 		    try 
             {
 			    for (;;) 
@@ -113,7 +118,7 @@ namespace udtCSharp.Common
 		    }
             finally 
             {
-                mutex.ReleaseMutex();
+                mutex2.ReleaseMutex();
 		    }
 	    }
       
@@ -127,18 +132,21 @@ namespace udtCSharp.Common
             {
 			    return null;
 		    }
-            ////暂时加的
-            //readPosition--;            
+            //暂时加的
+            //readPosition--;
 		    AppData r = buffer[readPosition];
 		    if(r!=null)
             {
 			    long thisSeq=r.getSequenceNumber();
-			    if(1==SequenceNumber.seqOffset(highestReadSequenceNumber,thisSeq))
+                if (1 == SequenceNumber.seqOffset(highestReadSequenceNumber, thisSeq))
                 {
-				    increment();
-				    highestReadSequenceNumber=thisSeq;
-			    }
-			    else return null;
+                    increment();
+                    highestReadSequenceNumber = thisSeq;
+                }
+                else
+                {
+                    return null;
+                }
 		    }
 		    return r;
 	    }

@@ -88,7 +88,7 @@ namespace udtCSharp.UDT
                     {
                         return read;
                     }
-
+                    //继续读取数据
                     updateCurrentChunk(blocking && read == 0);
                 }
 

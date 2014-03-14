@@ -264,24 +264,24 @@ namespace udtCSharp.UDT
                     UDTPacket packet = handoffQueue.Dequeue();                    
                     if (packet != null)
                     {
-                        //reset exp count to 1
-                        expCount = 1;
-                        //If there is no unacknowledged data packet, or if this is an 
-                        //ACK or NAK control packet, reset the EXP timer.
-                        bool needEXPReset = false;
-                        if (packet.isControlPacket())
-                        {
-                            ControlPacket cp = (ControlPacket)packet;
-                            int cpType = cp.getControlPacketType();
-                            if (cpType == (int)ControlPacketType.ACK || cpType == (int)ControlPacketType.NAK)
-                            {
-                                needEXPReset = true;
-                            }
-                        }
-                        if (needEXPReset)
-                        {
-                            nextEXP = Util.getCurrentTime() + expTimerInterval;
-                        }
+                        ////reset exp count to 1
+                        //expCount = 1;
+                        ////If there is no unacknowledged data packet, or if this is an 
+                        ////ACK or NAK control packet, reset the EXP timer.
+                        //bool needEXPReset = false;
+                        //if (packet.isControlPacket())
+                        //{
+                        //    ControlPacket cp = (ControlPacket)packet;
+                        //    int cpType = cp.getControlPacketType();
+                        //    if (cpType == (int)ControlPacketType.ACK || cpType == (int)ControlPacketType.NAK)
+                        //    {
+                        //        needEXPReset = true;
+                        //    }
+                        //}
+                        //if (needEXPReset)
+                        //{
+                        //    nextEXP = Util.getCurrentTime() + expTimerInterval;
+                        //}
                         if (storeStatistics) processTime.begin();
                         //解析数据包将数据存在AppData类中
                         processUDTPacket(packet);
