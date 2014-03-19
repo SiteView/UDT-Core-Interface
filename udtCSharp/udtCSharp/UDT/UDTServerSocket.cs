@@ -61,13 +61,14 @@ namespace udtCSharp.UDT
                     UDTSession session = endpoint.accept();
                     if (session != null)
                     {
-                        //wait for handshake to complete
+                        //等待握手完成
                         while (!session.isReady() || session.getSocket() == null)
                         {
                             Thread.Sleep(100);
                         }
                         return session.getSocket();
                     }
+                    Thread.Sleep(400);
                 }
                 return null;
             }

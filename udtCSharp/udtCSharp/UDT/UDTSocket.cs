@@ -215,6 +215,7 @@ namespace udtCSharp.UDT
                     {				       
                         Log.Write(this.ToString(),"Queue full");
 			        }
+                    Thread.Sleep(50);
                 }
                 catch(Exception exc)
                 {

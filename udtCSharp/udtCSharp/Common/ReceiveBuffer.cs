@@ -45,7 +45,7 @@ namespace udtCSharp.Common
 		    this.buffer=new AppData[size];
 		    this.initialSequenceNumber=initialSequenceNumber;         
 		    highestReadSequenceNumber=SequenceNumber.decrement(initialSequenceNumber);
-		    Log.Write(this.ToString(),"SIZE: "+size);
+		    //Log.Write(this.ToString(),"SIZE: "+size);
 	    }
 
 	    public bool offer(AppData data)
@@ -97,8 +97,7 @@ namespace udtCSharp.Common
         /// <param name="units"></param>
         /// <returns></returns>
 	    public AppData poll(int timeout)
-        {
-		    
+        {		    
 		    long nanos = timeout*1000;//毫秒
             mutex2.WaitOne((int)nanos);
 		    try 
@@ -114,6 +113,7 @@ namespace udtCSharp.Common
 					    return null;
                     }
                     nanos--;
+                    Thread.Sleep(5);
 			    }
 		    }
             finally 
@@ -131,9 +131,7 @@ namespace udtCSharp.Common
             if (numValidChunks.Get() == 0)
             {
 			    return null;
-		    }
-            //暂时加的
-            //readPosition--;
+		    }          
 		    AppData r = buffer[readPosition];
 		    if(r!=null)
             {

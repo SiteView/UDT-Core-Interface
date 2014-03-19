@@ -99,6 +99,7 @@ namespace udtCSharp.Common
 				    int r = inputStream.Read(sizeInfo,0,sizeInfo.Length);
 				    if(r < 0)break;
 				    total+=r;
+                    Thread.Sleep(50);
 			    }
 			    long size = Util.decode(sizeInfo, 0);
 
@@ -123,6 +124,8 @@ namespace udtCSharp.Common
 			        //接收文件数据
 				    Util.copy(inputStream, os, size, false);
 
+                    client.shutdown();
+
                     TimeSpan ts_end = new TimeSpan(System.DateTime.UtcNow.Ticks - new DateTime(1970, 1, 1, 0, 0, 0).Ticks);
                     long end = (long)ts_end.TotalMilliseconds;
 
@@ -130,7 +133,7 @@ namespace udtCSharp.Common
 
                     Log.Write(this.ToString(), "[ReceiveFile] Rate: " + Math.Round(rate, 3) + " MBytes/sec. " + Math.Round(8 * rate,3) + " MBit/sec.");
 			
-				    client.shutdown();
+				   
 				
 				    if(verbose)
                          Log.Write(this.ToString(),client.getStatistics().toString());

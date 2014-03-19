@@ -46,13 +46,14 @@ namespace udtCSharp.UDT
                         {
                             break;
                         }
+                        Thread.Sleep(1000);
                     }
 			        if(getState()==invalid)
                     {
                          Log.Write(this.ToString(),"Can't connect!");
                     }
 			        n++;
-			        if(getState()!=ready)Thread.Sleep(500);
+			        if(getState()!=ready)Thread.Sleep(1000);
 		        }
 		        cc.init();
 		        Log.Write(this.ToString(),"Connected, "+n+" handshake packets sent");
@@ -122,16 +123,28 @@ namespace udtCSharp.UDT
 				    return;
 			    }
 			    active = true;
-			    try{
+			    try
+                {
 				    if(packet.forSender())
                     {
 					    socket.getSender().receive(lastPacket);
 				    }
                     else
                     {
+                        DataPacket dtemp = (DataPacket)lastPacket;
+                        //Log.Write(this.ToString(), "receive data PacketSequenceNumber：" + dtemp.getPacketSequenceNumber() + "  length:" + dtemp.getData().Length);
+                        //if (!lastPacket.isControlPacket())
+                        //{
+                        //    Thread.Sleep(50);
+                        //    //向发送端反回数据包
+                        //    sendDataPacketAnswer((DataPacket)lastPacket);
+                        //    Log.Write(this.ToString(), "return data PacketSequenceNumber" + lastPacket.getPacketSequenceNumber() + "  length:" + dtemp.getData().Length + "  MessageNumber:9999");
+                        //}
                         socket.getReceiver().receive(lastPacket);//将数据包存在UDTReceiver类的队列中
 				    }
-			    }catch(Exception ex){
+			    }
+                catch(Exception ex)
+                {
 				    //session is invalid
 				    Log.Write(this.ToString(),"SEVERE:Error in "+toString(),ex);
 				    setState(invalid);
@@ -191,6 +204,24 @@ namespace udtCSharp.UDT
                 Log.Write(this.ToString(), exc);
             }
 	    }
+
+        /// <summary>
+        /// 向发送端返回数据包
+        /// </summary>
+        protected void sendDataPacketAnswer(DataPacket dp)
+        {
+            try
+            {                
+                dp.setDestinationID(getDestination().getSocketID());
+                dp.setSession(this);
+                dp.setMessageNumber(9999);//作为返回确认数据包                
+                endPoint.doSend(dp);
+            }
+            catch (Exception exc)
+            {
+                Log.Write(this.ToString(), exc);
+            }
+        }
 
 	    public UDTPacket getLastPkt()
         {

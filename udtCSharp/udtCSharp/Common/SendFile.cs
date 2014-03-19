@@ -67,7 +67,8 @@ namespace udtCSharp.Common
                 
                 while(true)
                 {
-                    UDTSocket socket = server.Accept();//启动监听(第一次),及获取已经存在的连接信息
+                    //启动监听(第一次),及获取已经存在的连接信息
+                    UDTSocket socket = server.Accept();
 				    Thread.Sleep(1000);
                     TaskInfo ti = new TaskInfo(socket, verbose);
                     
@@ -148,6 +149,20 @@ namespace udtCSharp.Common
                     {
                         Util.copySend(fis, outputStream, size, false);
 					}
+                    while (true)
+                    {
+                        //UDTSender _udtsender = ti.socket.getSender();
+                        //if (_udtsender.GetsendQueueCount() == 0)
+                         UDTSession _udtsession = ti.socket.getSession();
+                        if (_udtsession.getState() == 4)
+                        {
+                            break;
+                        }
+                        else
+                        {
+                            Thread.Sleep(2000);
+                        }
+                    }
 					Log.Write("[SendFile] Finished sending data.");
 
                     TimeSpan ts_end = new TimeSpan(System.DateTime.UtcNow.Ticks - new DateTime(1970, 1, 1, 0, 0, 0).Ticks);
@@ -160,6 +175,7 @@ namespace udtCSharp.Common
                 finally
                 {
 					ti.socket.getSender().stop();
+                    ti.socket.close();
 					if(fis!=null)fis.Close();
 				}
 				Log.Write("Finished request from "+ti.socket.getSession().getDestination());

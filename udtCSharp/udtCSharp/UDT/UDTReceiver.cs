@@ -115,17 +115,10 @@ namespace udtCSharp.UDT
             KEEP_ALIVE,
             ACK,
             NAK,
-            UNUNSED_1,
+            AnswerData,
             SHUTDOWN,
             ACK2,
-            MESSAGE_DROP_REQUEST,
-            UNUNSED_2,
-            UNUNSED_3,
-            UNUNSED_4,
-            UNUNSED_5,
-            UNUNSED_6,
-            UNUNSED_7,
-            UNUNSED_8,
+            MESSAGE_DROP_REQUEST,          
             USER_DEFINED
         }
 
@@ -217,7 +210,7 @@ namespace udtCSharp.UDT
 	    public void receive(UDTPacket p)
         {
 		    if(storeStatistics)dgReceiveInterval.end();
-		    handoffQueue.Enqueue(p);
+		    handoffQueue.Enqueue(p);            
 		    if(storeStatistics)dgReceiveInterval.begin();
 	    }
 
@@ -416,9 +409,8 @@ namespace udtCSharp.UDT
                     {
 				        dataProcessTime.end();
 				        dataPacketInterval.begin();
-			        }
+			        }                    
 		        }
-
 		        else if (p.getControlPacketType()==(int)ControlPacketType.ACK2)
                 {
 			        Acknowledgment2 ack2=(Acknowledgment2)p;
@@ -460,6 +452,7 @@ namespace udtCSharp.UDT
         //			}
         //		//}
                 bool OK = session.getSocket().getInputStream().haveNewData(currentSequenceNumber, dp.getData());//解析数据包将数据存在AppData类中
+                //Log.Write(this.ToString(), "receive data PacketSequenceNumber：" + currentSequenceNumber + "  length:" + dp.getData().Length);
 		        if(!OK)
                 {
 			        //need to drop packet...

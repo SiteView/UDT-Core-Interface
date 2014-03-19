@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
 using System.IO;
 using udtCSharp.Common;
 
@@ -90,6 +91,7 @@ namespace udtCSharp.UDT
                     }
                     //继续读取数据
                     updateCurrentChunk(blocking && read == 0);
+                    Thread.Sleep(10);
                 }
 
                 if (read > 0) return read;
@@ -115,8 +117,8 @@ namespace udtCSharp.UDT
         {
             if (currentChunk != null) return;
 
-            while (true)
-            {
+            //while (true)
+            //{
                 try
                 {
                     if (block)
@@ -131,14 +133,14 @@ namespace udtCSharp.UDT
                     {
                         currentChunk = receiveBuffer.poll(10);
                     }
-
+                    //Thread.Sleep(10);
                 }
                 catch (Exception ie)
                 {
                     Log.Write(this.ToString(), ie);
                 }
-                return;
-            }
+            //    return;
+            //}
         }
 
         /// <summary>

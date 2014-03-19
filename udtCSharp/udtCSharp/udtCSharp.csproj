@@ -61,6 +61,7 @@
     <Compile Include="packets\ConnectionHandshake.cs" />
     <Compile Include="packets\ControlPacket.cs" />
     <Compile Include="packets\DataPacket.cs" />
+    <Compile Include="packets\DataPacketAnswer.cs" />
     <Compile Include="packets\Destination.cs" />
     <Compile Include="packets\KeepAlive.cs" />
     <Compile Include="packets\MessageDropRequest.cs" />

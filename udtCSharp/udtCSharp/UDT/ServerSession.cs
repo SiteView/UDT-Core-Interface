@@ -96,10 +96,21 @@ namespace udtCSharp.UDT
 			    else
                 {
 				    try{
-					    if(packet.forSender()){
+					    if(packet.forSender())
+                        {
 						    socket.getSender().receive(packet);
-					    }else{
-						    socket.getReceiver().receive(packet);	
+					    }
+                        else
+                        {
+                            if (packet.getMessageNumber() == 9999)//作为返回确认数据包
+                            {
+                                //通知可以继续发送数据
+                                socket.getSender().receive(packet);
+                            }
+                            else
+                            {
+                                socket.getReceiver().receive(packet);
+                            }						    
 					    }
 				    }catch(Exception ex)
                     {

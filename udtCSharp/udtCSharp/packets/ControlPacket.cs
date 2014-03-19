@@ -165,17 +165,10 @@ namespace udtCSharp.packets
             KEEP_ALIVE,
             ACK,
             NAK,
-            UNUNSED_1,
+            AnswerData,
             SHUTDOWN,
             ACK2,
-            MESSAGE_DROP_REQUEST,
-            UNUNSED_2,
-            UNUNSED_3,
-            UNUNSED_4,
-            UNUNSED_5,
-            UNUNSED_6,
-            UNUNSED_7,
-            UNUNSED_8,
+            MESSAGE_DROP_REQUEST,          
             USER_DEFINED
 
         }

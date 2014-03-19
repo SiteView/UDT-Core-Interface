@@ -129,8 +129,9 @@ namespace udtCSharp.UDT
 			    Shutdown shutdown = new Shutdown();
 			    shutdown.setDestinationID(clientSession.getDestination().getSocketID());
 			    shutdown.setSession(clientSession);
-			    try{
-				    clientEndpoint.doSend(shutdown);
+			    try
+                {                    
+				    clientEndpoint.doSend(shutdown);                    
 			    }
 			    catch(Exception e)
 			    {

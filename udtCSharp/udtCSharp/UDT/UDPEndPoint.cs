@@ -366,7 +366,7 @@ namespace udtCSharp.UDT
                    new AsyncCallback(SendCallback),
                    null);
             }
-            catch (SocketException ex)
+            catch (Exception ex)
             {
                 Log.Write(this.ToString(), " SendInternal UDP send data", ex);
             }
@@ -378,7 +378,7 @@ namespace udtCSharp.UDT
             {
                 this._udpClient.EndSend(result);
             }
-            catch (SocketException ex)
+            catch (Exception ex)
             {
                 Log.Write(this.ToString(), "SendCallback UDP send data", ex);
             }

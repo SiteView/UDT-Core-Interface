@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -119,8 +120,12 @@ namespace udtCSharp.Common
                         ///Log.Write("writing <"+c+"> bytes");
                         target.Write(buf, 0, c);
                         if (flush) target.Flush();
-                        if (read >= size && size > -1) break;
+                        if (read >= size && size > -1)
+                        {
+                            break;
+                        }
                     }
+                    Thread.Sleep(50);
                 }
                 if (!flush) target.Flush();
             }
@@ -149,28 +154,29 @@ namespace udtCSharp.Common
                 int numBytesToRead = (int)source.Length;
                 //已经读取的长度
                 int numBytesRead = 0;
+                target.Write(filebuf, 0, filebuf.Length);
+                //while (true)
+                //{
+                //    int len = 0;
+                //    len = Math.Min(512 * 1024, numBytesToRead);
+                //    if (len == 0)
+                //        break;
+                //    byte[] buf = new byte[len];
+                //    Array.Copy(filebuf, numBytesRead, buf, 0, len);
+                //    //Log.Write("writing <"+len+"> bytes");
+                //    target.Write(buf, 0, len);
 
-                while (true)
-                {
-                    int len = 0;
-                    len = Math.Min(512 * 1024, numBytesToRead);
-                    if (len == 0)
-                        break;
-                    byte[] buf = new byte[len];
-                    Array.Copy(filebuf, numBytesRead, buf, 0, len);
-                    //Log.Write("writing <"+len+"> bytes");
-                    target.Write(buf, 0, len);
+                //    numBytesRead += len;
+                //    numBytesToRead -= len;
 
-                    numBytesRead += len;
-                    numBytesToRead -= len;
-
-                    if (flush) 
-                        target.Flush();
-                }
-                if (!flush)
-                {
-                    target.Flush();
-                }
+                //    if (flush) 
+                //        target.Flush();
+                //    Thread.Sleep(200);
+                //}
+                //if (!flush)
+                //{
+                //    target.Flush();
+                //}
                 source.Close();
             }
             catch (Exception exc)

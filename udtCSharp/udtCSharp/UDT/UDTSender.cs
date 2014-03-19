@@ -40,6 +40,11 @@ namespace udtCSharp.UDT
 	    private Queue<DataPacket> sendQueue;
 
         /// <summary>
+        /// 用于控制队列的发送
+        /// </summary>
+        private volatile CountDownLatch sendQueueStart = new CountDownLatch(1);
+
+        /// <summary>
         /// thread reading packets from send queue and sending them
         /// </summary>
 	    private Thread senderThread;
@@ -240,6 +245,15 @@ namespace udtCSharp.UDT
                 {
 			        session.getSocket().getReceiver().resetEXPCount();
 		        }
+                else if (p is DataPacket)
+                {
+                    ////返回的确认数据包
+                    ////DataPacketAnswer Answer = (DataPacketAnswer)p;
+                    //if (largestSentSequenceNumber == (int)p.getPacketSequenceNumber())
+                    //{
+                    //    sendQueueStart.CountDown();
+                    //}
+                }
             }
             catch(Exception ex)
             {
@@ -364,67 +378,92 @@ namespace udtCSharp.UDT
         /// </summary>
 	    public void senderAlgorithm()
         {
-		    while(!paused)
+            while (!paused)
             {
+                if (this.stopped) return;
                 if (sendQueue.Count <= 0)
                 {
+                    Thread.Sleep(50);
                     continue;
                 }
-			    iterationStart=Util.getCurrentTime();
-			
-			    //if the sender's loss list is not empty 
-			    if (!senderLossList.isEmpty()) 
-                {
-				    long entry=senderLossList.getFirstEntry();
-				    handleResubmit(entry);
-			    }
-			    else
-			    {
-				    //if the number of unacknowledged data packets does not exceed the congestion 
-				    //and the flow window sizes, pack a new packet
-				    int unAcknowledged=unacknowledged.Get();
 
-				    if(unAcknowledged<session.getCongestionControl().getCongestionWindowSize() && unAcknowledged<session.getFlowWindowSize())
-                    {
-					    //check for application data
-                        //DataPacket dp=sendQueue.poll(Util.SYN,TimeUnit.MICROSECONDS);
-                        DataPacket dp = sendQueue.Dequeue();
-					    if(dp!=null)
-                        {
-						    send(dp);
-                            largestSentSequenceNumber = (int)dp.getPacketSequenceNumber();
-					    }
-					    else{
-						    statistics.incNumberOfMissingDataEvents();
-					    }
-				    }else{
-					    //congestion window full, wait for an ack
-					    if(unAcknowledged>=session.getCongestionControl().getCongestionWindowSize()){
-						    statistics.incNumberOfCCWindowExceededEvents();
-					    }
-					    waitForAck();
-				    }
-			    }
+                //iterationStart=Util.getCurrentTime();
 
-			    //wait
-			    if(largestSentSequenceNumber % 16 !=0)
+                ////if the sender's loss list is not empty 
+                //if (!senderLossList.isEmpty()) 
+                //{
+                //    long entry=senderLossList.getFirstEntry();
+                //    handleResubmit(entry);
+                //}
+                //else
+                //{
+                //    //if the number of unacknowledged data packets does not exceed the congestion 
+                //    //and the flow window sizes, pack a new packet
+                //    int unAcknowledged=unacknowledged.Get();
+
+                //    if(unAcknowledged<session.getCongestionControl().getCongestionWindowSize() && unAcknowledged<session.getFlowWindowSize())
+                //    {
+                //        //check for application data
+                //        //DataPacket dp=sendQueue.poll(Util.SYN,TimeUnit.MICROSECONDS);
+                //        DataPacket dp = sendQueue.Dequeue();
+                //        if(dp!=null)
+                //        {
+                //            Log.Write(this.ToString(), "发送数据 PacketSequenceNumber =" + dp.getPacketSequenceNumber() + "  数据长度：" + dp.getData().Length);
+                //            send(dp);
+                //            largestSentSequenceNumber = (int)dp.getPacketSequenceNumber();
+
+                //        }
+                //        else
+                //        {
+                //            statistics.incNumberOfMissingDataEvents();
+                //        }
+                //    }
+                //    else
+                //    {
+                //        //congestion window full, wait for an ack
+                //        if(unAcknowledged>=session.getCongestionControl().getCongestionWindowSize())
+                //        {
+                //            statistics.incNumberOfCCWindowExceededEvents();
+                //        }
+                //        waitForAck();
+                //    }
+                //}
+
+                ////wait
+                //if(largestSentSequenceNumber % 16 !=0)
+                //{
+                //    long snd=(long)session.getCongestionControl().getSendInterval();
+                //    long passed=Util.getCurrentTime()-iterationStart;
+                //    int x=0;
+                //    while(snd-passed>0)
+                //    {
+                //        //can't wait with microsecond precision :(
+                //        if(x==0)
+                //        {
+                //            statistics.incNumberOfCCSlowDownEvents();
+                //            x++;
+                //        }
+                //        passed=Util.getCurrentTime()-iterationStart;
+                //        if(stopped)return;
+                //    }
+                //}
+
+                DataPacket dp = sendQueue.Dequeue();
+                if (dp != null)
                 {
-				    long snd=(long)session.getCongestionControl().getSendInterval();
-				    long passed=Util.getCurrentTime()-iterationStart;
-				    int x=0;
-				    while(snd-passed>0)
-                    {
-					    //can't wait with microsecond precision :(
-					    if(x==0)
-                        {
-						    statistics.incNumberOfCCSlowDownEvents();
-						    x++;
-					    }
-					    passed=Util.getCurrentTime()-iterationStart;
-					    if(stopped)return;
-				    }
-			    }
-		    }
+                    //Log.Write(this.ToString(), "发送数据 PacketSequenceNumber =" + dp.getPacketSequenceNumber() + "  数据长度：" + dp.getData().Length);
+                    send(dp);
+                    largestSentSequenceNumber = (int)dp.getPacketSequenceNumber();
+
+                    //if (largestSentSequenceNumber != -1)
+                    //{
+                    //    //Log.Write(this.ToString(), "加锁成功 largestSentSequenceNumber:" + largestSentSequenceNumber);
+                    //    sendQueueStart = new CountDownLatch(1);
+                    //    sendQueueStart.Await();
+                    //}
+                    Thread.Sleep(50);
+                }
+            }
 	    }
 
         /// <summary>
@@ -556,5 +595,16 @@ namespace udtCSharp.UDT
 		    startLatch=new CountDownLatch(1);
 		    paused=true;
 	    }
+
+        /// <summary>
+        /// 返回发送队列的数量
+        /// </summary>
+        /// <returns></returns>
+        public int GetsendQueueCount()
+        {
+            int isum = 0;
+            isum = sendQueue.Count;
+            return isum;
+        }
     }
 }

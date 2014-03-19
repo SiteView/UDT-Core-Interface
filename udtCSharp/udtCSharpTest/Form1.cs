@@ -80,7 +80,7 @@ namespace udtCSharpTest
             //do
             //{
             //    Thread.Sleep(500);
-            //}while(!serverStarted);		
+            //} while (!serverStarted);
 
             string pathSource = @"D:\XamlTest\MindSamples.rar";
             string pathNew = @"D:\XamlTest\MindSamplesBack.rar";
